@@ -35,7 +35,7 @@ UniqueFileFifoSQLiteQueue = unique_files_queue(FifoSQLiteQueue)
 UniqueFileLifoSQLiteQueue = unique_files_queue(LifoSQLiteQueue)
 
 
-SCHEDULER_SLOT_META_KEY = 'scheduler_slot'
+SCHEDULER_SLOT_META_KEY = 'downloader_slot'
 
 
 def scheduler_slot(request):
