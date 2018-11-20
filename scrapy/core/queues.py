@@ -56,6 +56,10 @@ class RoundRobinQueue:
         self.pqueues = dict()     # slot -> priority queue
         self.qfactory = qfactory  # factory for creating new internal queues
 
+        for slot, prios in startprios.items():
+            self._slots.append(slot)
+            self.pqueues = PriorityQueue(self.qfactory, prios)
+
     def push(self, request, priority):
 
         slot = scheduler_slot(request)
@@ -80,10 +84,13 @@ class RoundRobinQueue:
         return request
 
     def close(self):
-        for queue in self.pqueues.values():
-            queue.close()
+        startprios = dict()
+        for slot, queue in self.pqueues.items():
+            prios = queue.close()
+            startprios[slot] = prios
         self.pqueues.clear()
         self._slots.clear()
+        return startprios
 
     def __len__(self):
         return sum(len(x) for x in self.pqueues.values()) if self.pqueues else 0
