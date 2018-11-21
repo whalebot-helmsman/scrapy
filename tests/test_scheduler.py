@@ -1,3 +1,5 @@
+import shutil
+import tempfile
 import unittest
 
 from scrapy.core.scheduler import Scheduler
@@ -70,6 +72,24 @@ class BaseSchedulerInMemoryTester(SchedulerHandler):
             priorities.append(self.scheduler.next_request().priority)
 
         self.assertEqual(priorities, sorted(_PRIORITIES.values(), key=lambda x: -x))
+
+
+class BaseSchedulerOnDiskTester(SchedulerHandler):
+
+    def setUp(self):
+        self.old_jobdir = self.crawler_settings['JOBDIR']
+        self.directory = tempfile.mkdtemp()
+        self.crawler_settings['JOBDIR'] = self.directory
+
+        self.create_scheduler()
+
+    def tearDown(self):
+        shutil.rmtree(self.directory)
+        self.directory = None
+        self.crawler_settings['JOBDIR'] = self.old_jobdir
+        self.old_jobdir = None
+
+        self.close_scheduler()
 
 
 class TestSchedulerInMemory(BaseSchedulerInMemoryTester, unittest.TestCase):
