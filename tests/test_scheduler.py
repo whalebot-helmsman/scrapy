@@ -1,6 +1,7 @@
 import unittest
 
 from scrapy.core.scheduler import Scheduler
+from scrapy.http import Request
 from scrapy.settings import Settings
 import scrapy.settings.default_settings as DEFAULT_SETTINGS
 from scrapy.statscollectors import DummyStatsCollector
@@ -27,6 +28,12 @@ class BaseSchedulerInMemoryTester:
     def testLength(self):
         self.assertFalse(self.scheduler.has_pending_requests())
         self.assertEqual(len(self.scheduler), 0)
+
+        self.scheduler.enqueue_request(Request("http://foo.com/a"))
+        self.scheduler.enqueue_request(Request("http://foo.com/a"))
+
+        self.assertTrue(self.scheduler.has_pending_requests())
+        self.assertEqual(len(self.scheduler), 2)
 
 
 class TestSchedulerInMemory(BaseSchedulerInMemoryTester, unittest.TestCase):
