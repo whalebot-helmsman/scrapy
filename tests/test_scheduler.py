@@ -66,7 +66,6 @@ class BaseSchedulerInMemoryTester(SchedulerHandler):
         self.assertEqual(priorities, sorted(_PRIORITIES.values(), key=lambda x: -x))
 
 
-
 class TestSchedulerInMemory(BaseSchedulerInMemoryTester, unittest.TestCase):
     scheduler_cls = Scheduler
     crawler_settings = dict(LOG_UNSERIALIZABLE_REQUESTS=False,
