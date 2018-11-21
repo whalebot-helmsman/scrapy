@@ -20,7 +20,12 @@ class MockSpider:
 
 class SchedulerHandler:
     scheduler_cls = None
-    crawler_settings = None
+    crawler_settings = dict(LOG_UNSERIALIZABLE_REQUESTS=False,
+                            SCHEDULER_DISK_QUEUE=DEFAULT_SETTINGS.SCHEDULER_DISK_QUEUE,
+                            SCHEDULER_MEMORY_QUEUE=DEFAULT_SETTINGS.SCHEDULER_MEMORY_QUEUE,
+                            SCHEDULER_PRIORITY_QUEUE=DEFAULT_SETTINGS.SCHEDULER_PRIORITY_QUEUE,
+                            JOBDIR=None,
+                            DUPEFILTER_CLASS='scrapy.dupefilters.BaseDupeFilter')
 
     def create_scheduler(self):
         mock_crawler = MockCrawler(self.crawler_settings)
@@ -138,21 +143,7 @@ class BaseSchedulerOnDiskTester(SchedulerHandler):
 
 class TestSchedulerInMemory(BaseSchedulerInMemoryTester, unittest.TestCase):
     scheduler_cls = Scheduler
-    crawler_settings = dict(LOG_UNSERIALIZABLE_REQUESTS=False,
-                            SCHEDULER_DISK_QUEUE=DEFAULT_SETTINGS.SCHEDULER_DISK_QUEUE,
-                            SCHEDULER_MEMORY_QUEUE=DEFAULT_SETTINGS.SCHEDULER_MEMORY_QUEUE,
-                            SCHEDULER_PRIORITY_QUEUE=DEFAULT_SETTINGS.SCHEDULER_PRIORITY_QUEUE,
-                            JOBDIR=None,
-                            DUPEFILTER_CLASS='scrapy.dupefilters.BaseDupeFilter')
 
 
 class TestSchedulerOnDisk(BaseSchedulerOnDiskTester, unittest.TestCase):
     scheduler_cls = Scheduler
-    crawler_settings = dict(LOG_UNSERIALIZABLE_REQUESTS=False,
-                            SCHEDULER_DISK_QUEUE=DEFAULT_SETTINGS.SCHEDULER_DISK_QUEUE,
-                            SCHEDULER_MEMORY_QUEUE=DEFAULT_SETTINGS.SCHEDULER_MEMORY_QUEUE,
-                            SCHEDULER_PRIORITY_QUEUE=DEFAULT_SETTINGS.SCHEDULER_PRIORITY_QUEUE,
-                            JOBDIR=None,
-                            DUPEFILTER_CLASS='scrapy.dupefilters.BaseDupeFilter')
-
-
