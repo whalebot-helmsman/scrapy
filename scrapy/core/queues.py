@@ -51,7 +51,7 @@ def scheduler_slot(request):
 
 class RoundRobinQueue:
 
-    def __init__(self, qfactory, startprios=()):
+    def __init__(self, qfactory, startprios={}):
         self._slots = deque()
         self.pqueues = dict()     # slot -> priority queue
         self.qfactory = qfactory  # factory for creating new internal queues
