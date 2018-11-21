@@ -104,6 +104,20 @@ class BaseSchedulerOnDiskTester(SchedulerHandler):
         self.assertTrue(self.scheduler.has_pending_requests())
         self.assertEqual(len(self.scheduler), 2)
 
+    def test_dequeue(self):
+        _URLS = {"http://foo.com/a", "http://foo.com/b", "http://foo.com/c"}
+        for url in _URLS:
+            self.scheduler.enqueue_request(Request(url))
+
+        self.close_scheduler()
+        self.create_scheduler()
+
+        urls = set()
+        while self.scheduler.has_pending_requests():
+            urls.add(self.scheduler.next_request().url)
+
+        self.assertEqual(urls, _URLS)
+
 
 class TestSchedulerInMemory(BaseSchedulerInMemoryTester, unittest.TestCase):
     scheduler_cls = Scheduler
