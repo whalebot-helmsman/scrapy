@@ -56,6 +56,9 @@ class RoundRobinQueue:
         self.pqueues = dict()     # slot -> priority queue
         self.qfactory = qfactory  # factory for creating new internal queues
 
+        if not startprios:
+            return
+
         for slot, prios in startprios.items():
             self._slots.append(slot)
             self.pqueues = PriorityQueue(self.qfactory, prios)
