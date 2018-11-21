@@ -20,13 +20,19 @@ class SchedulerHandler:
     scheduler_cls = None
     crawler_settings = None
 
-    def setUp(self):
+    def create_scheduler(self):
         mock_crawler = MockCrawler(self.crawler_settings)
         self.scheduler = self.scheduler_cls.from_crawler(mock_crawler)
         self.scheduler.open(MockSpider)
 
-    def tearDown(self):
+    def close_scheduler(self):
         self.scheduler.close('finished')
+
+    def setUp(self):
+        self.create_scheduler()
+
+    def tearDown(self):
+        self.close_scheduler()
 
 
 class BaseSchedulerInMemoryTester(SchedulerHandler):
