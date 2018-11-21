@@ -1,4 +1,5 @@
 from collections import deque
+import hashlib
 import logging
 import uuid
 import os.path
@@ -46,7 +47,20 @@ def scheduler_slot(request):
         meta = getattr(request, 'meta', dict())
 
     slot = meta.get(SCHEDULER_SLOT_META_KEY, None)
-    return slot
+    return str(slot)
+
+
+def _make_file_safe(string):
+    """
+    Make string file safe but readable.
+    """
+    clean_string = "".join([c if c.isalnum() or c in '-._' else '_' for c in string])
+    hash_string = hashlib.md5(string.encode('utf8')).hexdigest()
+    return "{}-{}".format(clean_string[:40], hash_string[:10])
+
+
+def _transform_priority(priority):
+    return str(2**32 + priority)
 
 
 class RoundRobinQueue:
@@ -70,6 +84,7 @@ class RoundRobinQueue:
         if slot not in self.pqueues:
             self.pqueues[slot] = PriorityQueue(self.qfactory)
             self._slots.append(slot)
+        priority = '-'.join([_transform_priority(priority), _make_file_safe(slot)])
         self.pqueues[slot].push(request, priority)
 
     def pop(self):
