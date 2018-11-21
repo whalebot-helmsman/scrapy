@@ -5,7 +5,6 @@ import unittest
 from scrapy.core.scheduler import Scheduler
 from scrapy.http import Request
 from scrapy.settings import Settings
-import scrapy.settings.default_settings as DEFAULT_SETTINGS
 from scrapy.statscollectors import DummyStatsCollector
 
 class MockCrawler:
@@ -21,9 +20,9 @@ class MockSpider:
 class SchedulerHandler:
     scheduler_cls = None
     crawler_settings = dict(LOG_UNSERIALIZABLE_REQUESTS=False,
-                            SCHEDULER_DISK_QUEUE=DEFAULT_SETTINGS.SCHEDULER_DISK_QUEUE,
-                            SCHEDULER_MEMORY_QUEUE=DEFAULT_SETTINGS.SCHEDULER_MEMORY_QUEUE,
-                            SCHEDULER_PRIORITY_QUEUE=DEFAULT_SETTINGS.SCHEDULER_PRIORITY_QUEUE,
+                            SCHEDULER_DISK_QUEUE='scrapy.squeues.PickleLifoDiskQueue',
+                            SCHEDULER_MEMORY_QUEUE='scrapy.squeues.LifoMemoryQueue',
+                            SCHEDULER_PRIORITY_QUEUE='queuelib.PriorityQueue',
                             JOBDIR=None,
                             DUPEFILTER_CLASS='scrapy.dupefilters.BaseDupeFilter')
 
