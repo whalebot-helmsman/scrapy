@@ -5,11 +5,11 @@ import os.path
 
 
 from queuelib import PriorityQueue
-from queuelib.queue import (
-        FifoDiskQueue,
-        LifoDiskQueue,
-        FifoSQLiteQueue,
-        LifoSQLiteQueue,
+from scrapy.squeues import (
+        PickleFifoDiskQueue,
+        PickleLifoDiskQueue,
+        MarshalFifoDiskQueue,
+        MarshalLifoDiskQueue,
         )
 
 
@@ -29,10 +29,10 @@ def unique_files_queue(queue_class):
     return UniqueFilesQueue
 
 
-UniqueFileFifoDiskQueue = unique_files_queue(FifoDiskQueue)
-UniqueFileLifoDiskQueue = unique_files_queue(LifoDiskQueue)
-UniqueFileFifoSQLiteQueue = unique_files_queue(FifoSQLiteQueue)
-UniqueFileLifoSQLiteQueue = unique_files_queue(LifoSQLiteQueue)
+UniqueFilePickleFifoDiskQueue = unique_files_queue(PickleFifoDiskQueue)
+UniqueFilePickleLifoDiskQueue = unique_files_queue(PickleLifoDiskQueue)
+UniqueFileMarshalFifoDiskQueue = unique_files_queue(MarshalFifoDiskQueue)
+UniqueFileMarshalLifoDiskQueue = unique_files_queue(MarshalLifoDiskQueue)
 
 
 SCHEDULER_SLOT_META_KEY = 'downloader_slot'

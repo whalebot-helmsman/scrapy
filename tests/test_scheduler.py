@@ -151,7 +151,17 @@ class TestSchedulerOnDisk(BaseSchedulerOnDiskTester, unittest.TestCase):
 class TestSchedulerWithRoundRobinInMemory(BaseSchedulerInMemoryTester, unittest.TestCase):
     scheduler_cls = Scheduler
     crawler_settings = dict(LOG_UNSERIALIZABLE_REQUESTS=False,
-                            SCHEDULER_DISK_QUEUE='scrapy.core.queues.UniqueFileFifoDiskQueue',
+                            SCHEDULER_DISK_QUEUE='scrapy.core.queues.UniqueFilePickleFifoDiskQueue',
+                            SCHEDULER_MEMORY_QUEUE='scrapy.squeues.LifoMemoryQueue',
+                            SCHEDULER_PRIORITY_QUEUE='scrapy.core.queues.RoundRobinQueue',
+                            JOBDIR=None,
+                            DUPEFILTER_CLASS='scrapy.dupefilters.BaseDupeFilter')
+
+
+class TestSchedulerWithRoundRobinOnDisk(BaseSchedulerOnDiskTester, unittest.TestCase):
+    scheduler_cls = Scheduler
+    crawler_settings = dict(LOG_UNSERIALIZABLE_REQUESTS=False,
+                            SCHEDULER_DISK_QUEUE='scrapy.core.queues.UniqueFilePickleFifoDiskQueue',
                             SCHEDULER_MEMORY_QUEUE='scrapy.squeues.LifoMemoryQueue',
                             SCHEDULER_PRIORITY_QUEUE='scrapy.core.queues.RoundRobinQueue',
                             JOBDIR=None,
