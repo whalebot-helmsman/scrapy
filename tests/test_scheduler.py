@@ -28,7 +28,7 @@ class BaseSchedulerInMemoryTester:
     def tearDown(self):
         self.scheduler.close('finished')
 
-    def testLength(self):
+    def test_length(self):
         self.assertFalse(self.scheduler.has_pending_requests())
         self.assertEqual(len(self.scheduler), 0)
 
@@ -38,7 +38,7 @@ class BaseSchedulerInMemoryTester:
         self.assertTrue(self.scheduler.has_pending_requests())
         self.assertEqual(len(self.scheduler), 2)
 
-    def testDequeue(self):
+    def test_dequeue(self):
         _URLS = {"http://foo.com/a", "http://foo.com/b", "http://foo.com/c"}
         for url in _URLS:
             self.scheduler.enqueue_request(Request(url))
@@ -49,7 +49,7 @@ class BaseSchedulerInMemoryTester:
 
         self.assertEqual(urls, _URLS)
 
-    def testDequeuePriorities(self):
+    def test_dequeue_priorities(self):
         _PRIORITIES = {"http://foo.com/a": 0,
                        "http://foo.com/b": 1,
                        "http://foo.com/c": 2}
