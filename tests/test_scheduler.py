@@ -49,6 +49,21 @@ class BaseSchedulerInMemoryTester:
 
         self.assertEqual(urls, _URLS)
 
+    def testDequeuePriorities(self):
+        _PRIORITIES = {"http://foo.com/a": 0,
+                       "http://foo.com/b": 1,
+                       "http://foo.com/c": 2}
+
+        for url, priority in _PRIORITIES.items():
+            self.scheduler.enqueue_request(Request(url, priority=priority))
+
+        priorities = list()
+        while self.scheduler.has_pending_requests():
+            priorities.append(self.scheduler.next_request().priority)
+
+        self.assertEqual(priorities, sorted(_PRIORITIES.values(), key=lambda x: -x))
+
+
 
 class TestSchedulerInMemory(BaseSchedulerInMemoryTester, unittest.TestCase):
     scheduler_cls = Scheduler
