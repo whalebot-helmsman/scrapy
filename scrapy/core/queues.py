@@ -52,7 +52,6 @@ class RoundRobinQueue:
     def push(self, request, priority):
 
         slot = scheduler_slot(request)
-        logger.debug('Push "%s"', slot)
         if slot not in self.pqueues:
             self.pqueues[slot] = PriorityQueue(self.qfactory)
             self._slots.append(slot)
@@ -63,7 +62,6 @@ class RoundRobinQueue:
         if not self._slots:
             return
         slot = self._slots.popleft()
-        logger.debug('Pop "%s"', slot)
         queue = self.pqueues[slot]
         request = queue.pop()
 
