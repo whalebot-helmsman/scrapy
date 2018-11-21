@@ -47,7 +47,7 @@ class RoundRobinQueue:
 
         for slot, prios in startprios.items():
             self._slots.append(slot)
-            self.pqueues = PriorityQueue(self.qfactory, prios)
+            self.pqueues[slot] = PriorityQueue(self.qfactory, prios)
 
     def push(self, request, priority):
 
