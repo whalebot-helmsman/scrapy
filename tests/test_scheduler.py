@@ -25,6 +25,9 @@ class BaseSchedulerInMemoryTester:
         self.scheduler = self.scheduler_cls.from_crawler(mock_crawler)
         self.scheduler.open(MockSpider)
 
+    def tearDown(self):
+        self.scheduler.close('finished')
+
     def testLength(self):
         self.assertFalse(self.scheduler.has_pending_requests())
         self.assertEqual(len(self.scheduler), 0)
