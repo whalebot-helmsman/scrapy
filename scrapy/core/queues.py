@@ -1,39 +1,11 @@
 from collections import deque
 import hashlib
 import logging
-import uuid
-import os.path
-
 
 from queuelib import PriorityQueue
-from scrapy.squeues import (
-        PickleFifoDiskQueue,
-        PickleLifoDiskQueue,
-        MarshalFifoDiskQueue,
-        MarshalLifoDiskQueue,
-        )
 
 
 logger = logging.getLogger(__name__)
-
-
-def unique_files_queue(queue_class):
-
-    class UniqueFilesQueue(queue_class):
-        def __init__(self, path):
-            path = path + "-" + uuid.uuid4().hex
-            while os.path.exists(path):
-                path = path + "-" + uuid.uuid4().hex
-
-            super().__init__(path)
-
-    return UniqueFilesQueue
-
-
-UniqueFilePickleFifoDiskQueue = unique_files_queue(PickleFifoDiskQueue)
-UniqueFilePickleLifoDiskQueue = unique_files_queue(PickleLifoDiskQueue)
-UniqueFileMarshalFifoDiskQueue = unique_files_queue(MarshalFifoDiskQueue)
-UniqueFileMarshalLifoDiskQueue = unique_files_queue(MarshalLifoDiskQueue)
 
 
 SCHEDULER_SLOT_META_KEY = 'downloader_slot'

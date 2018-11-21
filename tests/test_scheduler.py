@@ -153,7 +153,7 @@ class TestSchedulerOnDisk(BaseSchedulerOnDiskTester, unittest.TestCase):
 
 class TestSchedulerWithRoundRobinInMemory(BaseSchedulerInMemoryTester, unittest.TestCase):
     crawler_settings = dict(LOG_UNSERIALIZABLE_REQUESTS=False,
-                            SCHEDULER_DISK_QUEUE='scrapy.core.queues.UniqueFilePickleFifoDiskQueue',
+                            SCHEDULER_DISK_QUEUE='scrapy.squeues.PickleLifoDiskQueue',
                             SCHEDULER_MEMORY_QUEUE='scrapy.squeues.LifoMemoryQueue',
                             SCHEDULER_PRIORITY_QUEUE='scrapy.core.queues.RoundRobinQueue',
                             JOBDIR=None,
@@ -162,7 +162,7 @@ class TestSchedulerWithRoundRobinInMemory(BaseSchedulerInMemoryTester, unittest.
 
 class TestSchedulerWithRoundRobinOnDisk(BaseSchedulerOnDiskTester, unittest.TestCase):
     crawler_settings = dict(LOG_UNSERIALIZABLE_REQUESTS=False,
-                            SCHEDULER_DISK_QUEUE='scrapy.core.queues.UniqueFilePickleFifoDiskQueue',
+                            SCHEDULER_DISK_QUEUE='scrapy.squeues.PickleLifoDiskQueue',
                             SCHEDULER_MEMORY_QUEUE='scrapy.squeues.LifoMemoryQueue',
                             SCHEDULER_PRIORITY_QUEUE='scrapy.core.queues.RoundRobinQueue',
                             JOBDIR=None,
