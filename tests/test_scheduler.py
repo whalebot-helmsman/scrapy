@@ -84,15 +84,38 @@ class BaseSchedulerOnDiskTester(SchedulerHandler):
         self.create_scheduler()
 
     def tearDown(self):
+        self.close_scheduler()
+
         shutil.rmtree(self.directory)
         self.directory = None
         self.crawler_settings['JOBDIR'] = self.old_jobdir
         self.old_jobdir = None
 
+    def test_length(self):
+        self.assertFalse(self.scheduler.has_pending_requests())
+        self.assertEqual(len(self.scheduler), 0)
+
+        self.scheduler.enqueue_request(Request("http://foo.com/a"))
+        self.scheduler.enqueue_request(Request("http://foo.com/a"))
+
         self.close_scheduler()
+        self.create_scheduler()
+
+        self.assertTrue(self.scheduler.has_pending_requests())
+        self.assertEqual(len(self.scheduler), 2)
 
 
 class TestSchedulerInMemory(BaseSchedulerInMemoryTester, unittest.TestCase):
+    scheduler_cls = Scheduler
+    crawler_settings = dict(LOG_UNSERIALIZABLE_REQUESTS=False,
+                            SCHEDULER_DISK_QUEUE=DEFAULT_SETTINGS.SCHEDULER_DISK_QUEUE,
+                            SCHEDULER_MEMORY_QUEUE=DEFAULT_SETTINGS.SCHEDULER_MEMORY_QUEUE,
+                            SCHEDULER_PRIORITY_QUEUE=DEFAULT_SETTINGS.SCHEDULER_PRIORITY_QUEUE,
+                            JOBDIR=None,
+                            DUPEFILTER_CLASS='scrapy.dupefilters.BaseDupeFilter')
+
+
+class TestSchedulerOnDisk(BaseSchedulerOnDiskTester, unittest.TestCase):
     scheduler_cls = Scheduler
     crawler_settings = dict(LOG_UNSERIALIZABLE_REQUESTS=False,
                             SCHEDULER_DISK_QUEUE=DEFAULT_SETTINGS.SCHEDULER_DISK_QUEUE,
