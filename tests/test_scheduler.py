@@ -63,9 +63,11 @@ class BaseSchedulerInMemoryTester(SchedulerHandler):
         self.assertEqual(urls, _URLS)
 
     def test_dequeue_priorities(self):
-        _PRIORITIES = {"http://foo.com/a": 0,
-                       "http://foo.com/b": 1,
-                       "http://foo.com/c": 2}
+        _PRIORITIES = {"http://foo.com/a": -2,
+                       "http://foo.com/b": -1,
+                       "http://foo.com/c": 0,
+                       "http://foo.com/d": 1,
+                       "http://foo.com/e": 2}
 
         for url, priority in _PRIORITIES.items():
             self.scheduler.enqueue_request(Request(url, priority=priority))
@@ -122,9 +124,11 @@ class BaseSchedulerOnDiskTester(SchedulerHandler):
         self.assertEqual(urls, _URLS)
 
     def test_dequeue_priorities(self):
-        _PRIORITIES = {"http://foo.com/a": 0,
-                       "http://foo.com/b": 1,
-                       "http://foo.com/c": 2}
+        _PRIORITIES = {"http://foo.com/a": -2,
+                       "http://foo.com/b": -1,
+                       "http://foo.com/c": 0,
+                       "http://foo.com/d": 1,
+                       "http://foo.com/e": 2}
 
         for url, priority in _PRIORITIES.items():
             self.scheduler.enqueue_request(Request(url, priority=priority))
