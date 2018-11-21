@@ -18,7 +18,6 @@ class MockSpider:
 
 
 class SchedulerHandler:
-    scheduler_cls = None
     crawler_settings = dict(LOG_UNSERIALIZABLE_REQUESTS=False,
                             SCHEDULER_DISK_QUEUE='scrapy.squeues.PickleLifoDiskQueue',
                             SCHEDULER_MEMORY_QUEUE='scrapy.squeues.LifoMemoryQueue',
@@ -28,7 +27,7 @@ class SchedulerHandler:
 
     def create_scheduler(self):
         mock_crawler = MockCrawler(self.crawler_settings)
-        self.scheduler = self.scheduler_cls.from_crawler(mock_crawler)
+        self.scheduler = Scheduler.from_crawler(mock_crawler)
         self.scheduler.open(MockSpider)
 
     def close_scheduler(self):
@@ -141,15 +140,14 @@ class BaseSchedulerOnDiskTester(SchedulerHandler):
 
 
 class TestSchedulerInMemory(BaseSchedulerInMemoryTester, unittest.TestCase):
-    scheduler_cls = Scheduler
+    pass
 
 
 class TestSchedulerOnDisk(BaseSchedulerOnDiskTester, unittest.TestCase):
-    scheduler_cls = Scheduler
+    pass
 
 
 class TestSchedulerWithRoundRobinInMemory(BaseSchedulerInMemoryTester, unittest.TestCase):
-    scheduler_cls = Scheduler
     crawler_settings = dict(LOG_UNSERIALIZABLE_REQUESTS=False,
                             SCHEDULER_DISK_QUEUE='scrapy.core.queues.UniqueFilePickleFifoDiskQueue',
                             SCHEDULER_MEMORY_QUEUE='scrapy.squeues.LifoMemoryQueue',
@@ -159,7 +157,6 @@ class TestSchedulerWithRoundRobinInMemory(BaseSchedulerInMemoryTester, unittest.
 
 
 class TestSchedulerWithRoundRobinOnDisk(BaseSchedulerOnDiskTester, unittest.TestCase):
-    scheduler_cls = Scheduler
     crawler_settings = dict(LOG_UNSERIALIZABLE_REQUESTS=False,
                             SCHEDULER_DISK_QUEUE='scrapy.core.queues.UniqueFilePickleFifoDiskQueue',
                             SCHEDULER_MEMORY_QUEUE='scrapy.squeues.LifoMemoryQueue',
