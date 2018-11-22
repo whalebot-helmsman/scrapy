@@ -1,3 +1,4 @@
+import contextlib
 import shutil
 import tempfile
 import unittest
@@ -195,3 +196,35 @@ class TestSchedulerWithRoundRobinOnDisk(BaseSchedulerOnDiskTester, unittest.Test
 
         for i in range(0, len(_SLOTS), 2):
             self.assertNotEqual(slots[i], slots[i+1])
+
+
+@contextlib.contextmanager
+def mkdtemp():
+    dir = tempfile.mkdtemp()
+    yield dir
+    shutil.rmtree(dir)
+
+
+def _migration():
+    _URLS = {"http://foo.com/a", "http://foo.com/b", "http://foo.com/c"}
+
+    with mkdtemp() as tmp_dir:
+        prev_scheduler_handler = SchedulerHandler()
+        prev_scheduler_handler.priority_queue_cls = 'queuelib.PriorityQueue'
+        prev_scheduler_handler.jobdir = tmp_dir
+
+        prev_scheduler_handler.create_scheduler()
+        for url in _URLS:
+            prev_scheduler_handler.scheduler.enqueue_request(Request(url))
+        prev_scheduler_handler.close_scheduler()
+
+        next_scheduler_handler = SchedulerHandler()
+        next_scheduler_handler.priority_queue_cls = 'scrapy.core.queues.RoundRobinQueue'
+        next_scheduler_handler.jobdir = tmp_dir
+
+        next_scheduler_handler.create_scheduler()
+
+
+class TestMigration(unittest.TestCase):
+    def test_migration(self):
+        self.assertRaises(ValueError, _migration)

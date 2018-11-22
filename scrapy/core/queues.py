@@ -67,6 +67,12 @@ class RoundRobinQueue:
         if not startprios:
             return
 
+        if not isinstance(startprios, dict):
+            raise ValueError("Looks like your priorities file malforfemed. ",
+                             "Possible reason: You run scrapy with previous ",
+                             "version. Interrupted it. Updated scrapy. And ",
+                             "run again.")
+
         for slot, prios in startprios.items():
             self._slots.append(slot)
             self.pqueues[slot] = PriorityQueue(self.qfactory, prios)
