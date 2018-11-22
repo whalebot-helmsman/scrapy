@@ -58,11 +58,11 @@ class BaseSchedulerInMemoryTester(SchedulerHandler):
         self.assertFalse(self.scheduler.has_pending_requests())
         self.assertEqual(len(self.scheduler), 0)
 
-        self.scheduler.enqueue_request(Request("http://foo.com/a"))
-        self.scheduler.enqueue_request(Request("http://foo.com/a"))
+        for url in _URLS:
+            self.scheduler.enqueue_request(Request(url))
 
         self.assertTrue(self.scheduler.has_pending_requests())
-        self.assertEqual(len(self.scheduler), 2)
+        self.assertEqual(len(self.scheduler), len(_URLS))
 
     def test_dequeue(self):
         for url in _URLS:
@@ -101,14 +101,14 @@ class BaseSchedulerOnDiskTester(SchedulerHandler):
         self.assertFalse(self.scheduler.has_pending_requests())
         self.assertEqual(len(self.scheduler), 0)
 
-        self.scheduler.enqueue_request(Request("http://foo.com/a"))
-        self.scheduler.enqueue_request(Request("http://foo.com/a"))
+        for url in _URLS:
+            self.scheduler.enqueue_request(Request(url))
 
         self.close_scheduler()
         self.create_scheduler()
 
         self.assertTrue(self.scheduler.has_pending_requests())
-        self.assertEqual(len(self.scheduler), 2)
+        self.assertEqual(len(self.scheduler), len(_URLS))
 
     def test_dequeue(self):
         for url in _URLS:
