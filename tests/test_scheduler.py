@@ -10,21 +10,25 @@ from scrapy.spiders import Spider
 from scrapy.statscollectors import DummyStatsCollector
 
 class MockCrawler:
-    def __init__(self, settings):
+    def __init__(self, priority_queue_cls, jobdir):
+
+        settings = dict(LOG_UNSERIALIZABLE_REQUESTS=False,
+                       SCHEDULER_DISK_QUEUE='scrapy.squeues.PickleLifoDiskQueue',
+                       SCHEDULER_MEMORY_QUEUE='scrapy.squeues.LifoMemoryQueue',
+                       SCHEDULER_PRIORITY_QUEUE=priority_queue_cls,
+                       JOBDIR=jobdir,
+                       DUPEFILTER_CLASS='scrapy.dupefilters.BaseDupeFilter')
+
         self.settings = Settings(settings)
         self.stats = DummyStatsCollector(self)
 
 
 class SchedulerHandler:
-    crawler_settings = dict(LOG_UNSERIALIZABLE_REQUESTS=False,
-                            SCHEDULER_DISK_QUEUE='scrapy.squeues.PickleLifoDiskQueue',
-                            SCHEDULER_MEMORY_QUEUE='scrapy.squeues.LifoMemoryQueue',
-                            SCHEDULER_PRIORITY_QUEUE='queuelib.PriorityQueue',
-                            JOBDIR=None,
-                            DUPEFILTER_CLASS='scrapy.dupefilters.BaseDupeFilter')
+    priority_queue_cls = None
+    jobdir = None
 
     def create_scheduler(self):
-        mock_crawler = MockCrawler(self.crawler_settings)
+        mock_crawler = MockCrawler(self.priority_queue_cls, self.jobdir)
         self.scheduler = Scheduler.from_crawler(mock_crawler)
         self.scheduler.open(Spider(name='spider'))
 
@@ -80,19 +84,14 @@ class BaseSchedulerInMemoryTester(SchedulerHandler):
 class BaseSchedulerOnDiskTester(SchedulerHandler):
 
     def setUp(self):
-        self.old_jobdir = self.crawler_settings['JOBDIR']
-        self.directory = tempfile.mkdtemp()
-        self.crawler_settings['JOBDIR'] = self.directory
-
+        self.jobdir = tempfile.mkdtemp()
         self.create_scheduler()
 
     def tearDown(self):
         self.close_scheduler()
 
-        shutil.rmtree(self.directory)
-        self.directory = None
-        self.crawler_settings['JOBDIR'] = self.old_jobdir
-        self.old_jobdir = None
+        shutil.rmtree(self.jobdir)
+        self.jobdir = None
 
     def test_length(self):
         self.assertFalse(self.scheduler.has_pending_requests())
@@ -142,20 +141,15 @@ class BaseSchedulerOnDiskTester(SchedulerHandler):
 
 
 class TestSchedulerInMemory(BaseSchedulerInMemoryTester, unittest.TestCase):
-    pass
+    priority_queue_cls = 'queuelib.PriorityQueue'
 
 
 class TestSchedulerOnDisk(BaseSchedulerOnDiskTester, unittest.TestCase):
-    pass
+    priority_queue_cls = 'queuelib.PriorityQueue'
 
 
 class TestSchedulerWithRoundRobinInMemory(BaseSchedulerInMemoryTester, unittest.TestCase):
-    crawler_settings = dict(LOG_UNSERIALIZABLE_REQUESTS=False,
-                            SCHEDULER_DISK_QUEUE='scrapy.squeues.PickleLifoDiskQueue',
-                            SCHEDULER_MEMORY_QUEUE='scrapy.squeues.LifoMemoryQueue',
-                            SCHEDULER_PRIORITY_QUEUE='scrapy.core.queues.RoundRobinQueue',
-                            JOBDIR=None,
-                            DUPEFILTER_CLASS='scrapy.dupefilters.BaseDupeFilter')
+    priority_queue_cls = 'scrapy.core.queues.RoundRobinQueue'
 
     def test_round_robin(self):
         _SLOTS = [("http://foo.com/a", 'a'),
@@ -178,12 +172,7 @@ class TestSchedulerWithRoundRobinInMemory(BaseSchedulerInMemoryTester, unittest.
 
 
 class TestSchedulerWithRoundRobinOnDisk(BaseSchedulerOnDiskTester, unittest.TestCase):
-    crawler_settings = dict(LOG_UNSERIALIZABLE_REQUESTS=False,
-                            SCHEDULER_DISK_QUEUE='scrapy.squeues.PickleLifoDiskQueue',
-                            SCHEDULER_MEMORY_QUEUE='scrapy.squeues.LifoMemoryQueue',
-                            SCHEDULER_PRIORITY_QUEUE='scrapy.core.queues.RoundRobinQueue',
-                            JOBDIR=None,
-                            DUPEFILTER_CLASS='scrapy.dupefilters.BaseDupeFilter')
+    priority_queue_cls = 'scrapy.core.queues.RoundRobinQueue'
 
     def test_round_robin(self):
         _SLOTS = [("http://foo.com/a", 'a'),
