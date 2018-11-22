@@ -6,16 +6,13 @@ from scrapy.core.queues import SCHEDULER_SLOT_META_KEY, scheduler_slot
 from scrapy.core.scheduler import Scheduler
 from scrapy.http import Request
 from scrapy.settings import Settings
+from scrapy.spiders import Spider
 from scrapy.statscollectors import DummyStatsCollector
 
 class MockCrawler:
     def __init__(self, settings):
         self.settings = Settings(settings)
         self.stats = DummyStatsCollector(self)
-
-
-class MockSpider:
-    pass
 
 
 class SchedulerHandler:
@@ -29,7 +26,7 @@ class SchedulerHandler:
     def create_scheduler(self):
         mock_crawler = MockCrawler(self.crawler_settings)
         self.scheduler = Scheduler.from_crawler(mock_crawler)
-        self.scheduler.open(MockSpider)
+        self.scheduler.open(Spider(name='spider'))
 
     def close_scheduler(self):
         self.scheduler.close('finished')
