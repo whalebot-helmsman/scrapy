@@ -43,6 +43,16 @@ class SchedulerHandler:
         self.close_scheduler()
 
 
+_PRIORITIES = [("http://foo.com/a", -2),
+               ("http://foo.com/d", 1),
+               ("http://foo.com/b", -1),
+               ("http://foo.com/c", 0),
+               ("http://foo.com/e", 2)]
+
+
+_URLS = {"http://foo.com/a", "http://foo.com/b", "http://foo.com/c"}
+
+
 class BaseSchedulerInMemoryTester(SchedulerHandler):
     def test_length(self):
         self.assertFalse(self.scheduler.has_pending_requests())
@@ -55,7 +65,6 @@ class BaseSchedulerInMemoryTester(SchedulerHandler):
         self.assertEqual(len(self.scheduler), 2)
 
     def test_dequeue(self):
-        _URLS = {"http://foo.com/a", "http://foo.com/b", "http://foo.com/c"}
         for url in _URLS:
             self.scheduler.enqueue_request(Request(url))
 
@@ -66,12 +75,6 @@ class BaseSchedulerInMemoryTester(SchedulerHandler):
         self.assertEqual(urls, _URLS)
 
     def test_dequeue_priorities(self):
-        _PRIORITIES = [("http://foo.com/a", -2),
-                       ("http://foo.com/d", 1),
-                       ("http://foo.com/b", -1),
-                       ("http://foo.com/c", 0),
-                       ("http://foo.com/e", 2)]
-
         for url, priority in _PRIORITIES:
             self.scheduler.enqueue_request(Request(url, priority=priority))
 
@@ -108,7 +111,6 @@ class BaseSchedulerOnDiskTester(SchedulerHandler):
         self.assertEqual(len(self.scheduler), 2)
 
     def test_dequeue(self):
-        _URLS = {"http://foo.com/a", "http://foo.com/b", "http://foo.com/c"}
         for url in _URLS:
             self.scheduler.enqueue_request(Request(url))
 
@@ -122,12 +124,6 @@ class BaseSchedulerOnDiskTester(SchedulerHandler):
         self.assertEqual(urls, _URLS)
 
     def test_dequeue_priorities(self):
-        _PRIORITIES = [("http://foo.com/a", -2),
-                       ("http://foo.com/d", 1),
-                       ("http://foo.com/c", 0),
-                       ("http://foo.com/b", -1),
-                       ("http://foo.com/e", 2)]
-
         for url, priority in _PRIORITIES:
             self.scheduler.enqueue_request(Request(url, priority=priority))
 
@@ -149,17 +145,18 @@ class TestSchedulerOnDisk(BaseSchedulerOnDiskTester, unittest.TestCase):
     priority_queue_cls = 'queuelib.PriorityQueue'
 
 
+_SLOTS = [("http://foo.com/a", 'a'),
+          ("http://foo.com/b", 'a'),
+          ("http://foo.com/c", 'b'),
+          ("http://foo.com/d", 'b'),
+          ("http://foo.com/d", 'c'),
+          ("http://foo.com/e", 'c')]
+
+
 class TestSchedulerWithRoundRobinInMemory(BaseSchedulerInMemoryTester, unittest.TestCase):
     priority_queue_cls = 'scrapy.core.queues.RoundRobinQueue'
 
     def test_round_robin(self):
-        _SLOTS = [("http://foo.com/a", 'a'),
-                  ("http://foo.com/b", 'a'),
-                  ("http://foo.com/c", 'b'),
-                  ("http://foo.com/d", 'b'),
-                  ("http://foo.com/d", 'c'),
-                  ("http://foo.com/e", 'c')]
-
         for url, slot in _SLOTS:
             request = Request(url, meta={SCHEDULER_SLOT_META_KEY: slot})
             self.scheduler.enqueue_request(request)
@@ -176,13 +173,6 @@ class TestSchedulerWithRoundRobinOnDisk(BaseSchedulerOnDiskTester, unittest.Test
     priority_queue_cls = 'scrapy.core.queues.RoundRobinQueue'
 
     def test_round_robin(self):
-        _SLOTS = [("http://foo.com/a", 'a'),
-                  ("http://foo.com/b", 'a'),
-                  ("http://foo.com/c", 'b'),
-                  ("http://foo.com/d", 'b'),
-                  ("http://foo.com/d", 'c'),
-                  ("http://foo.com/e", 'c')]
-
         for url, slot in _SLOTS:
             request = Request(url, meta={SCHEDULER_SLOT_META_KEY: slot})
             self.scheduler.enqueue_request(request)
@@ -206,7 +196,6 @@ def mkdtemp():
 
 
 def _migration():
-    _URLS = {"http://foo.com/a", "http://foo.com/b", "http://foo.com/c"}
 
     with mkdtemp() as tmp_dir:
         prev_scheduler_handler = SchedulerHandler()
