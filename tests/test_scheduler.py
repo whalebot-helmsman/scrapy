@@ -64,20 +64,20 @@ class BaseSchedulerInMemoryTester(SchedulerHandler):
         self.assertEqual(urls, _URLS)
 
     def test_dequeue_priorities(self):
-        _PRIORITIES = {"http://foo.com/a": -2,
-                       "http://foo.com/b": -1,
-                       "http://foo.com/c": 0,
-                       "http://foo.com/d": 1,
-                       "http://foo.com/e": 2}
+        _PRIORITIES = [("http://foo.com/a", -2),
+                       ("http://foo.com/d", 1),
+                       ("http://foo.com/b", -1),
+                       ("http://foo.com/c", 0),
+                       ("http://foo.com/e", 2)]
 
-        for url, priority in _PRIORITIES.items():
+        for url, priority in _PRIORITIES:
             self.scheduler.enqueue_request(Request(url, priority=priority))
 
         priorities = list()
         while self.scheduler.has_pending_requests():
             priorities.append(self.scheduler.next_request().priority)
 
-        self.assertEqual(priorities, sorted(_PRIORITIES.values(), key=lambda x: -x))
+        self.assertEqual(priorities, sorted([x[1] for x in _PRIORITIES], key=lambda x: -x))
 
 
 class BaseSchedulerOnDiskTester(SchedulerHandler):
@@ -125,13 +125,13 @@ class BaseSchedulerOnDiskTester(SchedulerHandler):
         self.assertEqual(urls, _URLS)
 
     def test_dequeue_priorities(self):
-        _PRIORITIES = {"http://foo.com/a": -2,
-                       "http://foo.com/b": -1,
-                       "http://foo.com/c": 0,
-                       "http://foo.com/d": 1,
-                       "http://foo.com/e": 2}
+        _PRIORITIES = [("http://foo.com/a", -2),
+                       ("http://foo.com/d", 1),
+                       ("http://foo.com/c", 0),
+                       ("http://foo.com/b", -1),
+                       ("http://foo.com/e", 2)]
 
-        for url, priority in _PRIORITIES.items():
+        for url, priority in _PRIORITIES:
             self.scheduler.enqueue_request(Request(url, priority=priority))
 
         self.close_scheduler()
@@ -141,7 +141,7 @@ class BaseSchedulerOnDiskTester(SchedulerHandler):
         while self.scheduler.has_pending_requests():
             priorities.append(self.scheduler.next_request().priority)
 
-        self.assertEqual(priorities, sorted(_PRIORITIES.values(), key=lambda x: -x))
+        self.assertEqual(priorities, sorted([x[1] for x in _PRIORITIES], key=lambda x: -x))
 
 
 class TestSchedulerInMemory(BaseSchedulerInMemoryTester, unittest.TestCase):
