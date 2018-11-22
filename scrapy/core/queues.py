@@ -68,9 +68,9 @@ class RoundRobinQueue:
             return
 
         if not isinstance(startprios, dict):
-            raise ValueError("Looks like your priorities file malforfemed. ",
-                             "Possible reason: You run scrapy with previous ",
-                             "version. Interrupted it. Updated scrapy. And ",
+            raise ValueError("Looks like your priorities file malforfemed. "
+                             "Possible reason: You run scrapy with previous "
+                             "version. Interrupted it. Updated scrapy. And "
                              "run again.")
 
         for slot, prios in startprios.items():
