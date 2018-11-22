@@ -22,17 +22,39 @@ def scheduler_slot(request):
     return str(slot)
 
 
-def _make_file_safe(string):
+_VERY_BIG = 2**32
+def _get_priority(slot, priority):
     """
-    Make string file safe but readable.
+        We want to provide some kind of fake priority for PriorityQueue.
+        It should meet next requirements:
+
+        - should be writeable/readable to/from json without special handlers
+        - should be comparable
+        - should be hashasble
+        - should be different for different slots
+        - should be in same order as priority
+        - should be useable as a path
     """
-    clean_string = "".join([c if c.isalnum() or c in '-._' else '_' for c in string])
-    hash_string = hashlib.md5(string.encode('utf8')).hexdigest()
-    return "{}-{}".format(clean_string[:40], hash_string[:10])
 
+    """
+        we add _VERY_BIG to number so negative numbers are positive and their
+        string representation is smaller
+    """
+    priority_part = str(_VERY_BIG + priority)
 
-def _transform_priority(priority):
-    return str(2**32 + priority)
+    """
+        made slot value be used as a path
+    """
+    pathable_slot = "".join([c if c.isalnum() or c in '-._' else '_' for c in slot])
+
+    """
+        as we replace some letters we can get collision for different slots
+        add we add unique part
+    """
+    unique_slot = hashlib.md5(slot.encode('utf8')).hexdigest()
+
+    return '-'.join([priority_part, pathable_slot, unique_slot])
+
 
 
 class RoundRobinQueue:
@@ -55,8 +77,7 @@ class RoundRobinQueue:
         if slot not in self.pqueues:
             self.pqueues[slot] = PriorityQueue(self.qfactory)
             self._slots.append(slot)
-        priority = '-'.join([_transform_priority(priority), _make_file_safe(slot)])
-        self.pqueues[slot].push(request, priority)
+        self.pqueues[slot].push(request, _get_priority(slot, priority))
 
     def pop(self):
         if not self._slots:
