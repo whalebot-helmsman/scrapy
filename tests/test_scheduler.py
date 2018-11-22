@@ -2,6 +2,7 @@ import shutil
 import tempfile
 import unittest
 
+from scrapy.core.queues import SCHEDULER_SLOT_META_KEY, scheduler_slot
 from scrapy.core.scheduler import Scheduler
 from scrapy.http import Request
 from scrapy.settings import Settings
@@ -159,6 +160,25 @@ class TestSchedulerWithRoundRobinInMemory(BaseSchedulerInMemoryTester, unittest.
                             JOBDIR=None,
                             DUPEFILTER_CLASS='scrapy.dupefilters.BaseDupeFilter')
 
+    def test_round_robin(self):
+        _SLOTS = [("http://foo.com/a", 'a'),
+                  ("http://foo.com/b", 'a'),
+                  ("http://foo.com/c", 'b'),
+                  ("http://foo.com/d", 'b'),
+                  ("http://foo.com/d", 'c'),
+                  ("http://foo.com/e", 'c')]
+
+        for url, slot in _SLOTS:
+            request = Request(url, meta={SCHEDULER_SLOT_META_KEY: slot})
+            self.scheduler.enqueue_request(request)
+
+        slots = list()
+        while self.scheduler.has_pending_requests():
+            slots.append(scheduler_slot(self.scheduler.next_request()))
+
+        for i in range(0, len(_SLOTS), 2):
+            self.assertNotEqual(slots[i], slots[i+1])
+
 
 class TestSchedulerWithRoundRobinOnDisk(BaseSchedulerOnDiskTester, unittest.TestCase):
     crawler_settings = dict(LOG_UNSERIALIZABLE_REQUESTS=False,
@@ -167,3 +187,25 @@ class TestSchedulerWithRoundRobinOnDisk(BaseSchedulerOnDiskTester, unittest.Test
                             SCHEDULER_PRIORITY_QUEUE='scrapy.core.queues.RoundRobinQueue',
                             JOBDIR=None,
                             DUPEFILTER_CLASS='scrapy.dupefilters.BaseDupeFilter')
+
+    def test_round_robin(self):
+        _SLOTS = [("http://foo.com/a", 'a'),
+                  ("http://foo.com/b", 'a'),
+                  ("http://foo.com/c", 'b'),
+                  ("http://foo.com/d", 'b'),
+                  ("http://foo.com/d", 'c'),
+                  ("http://foo.com/e", 'c')]
+
+        for url, slot in _SLOTS:
+            request = Request(url, meta={SCHEDULER_SLOT_META_KEY: slot})
+            self.scheduler.enqueue_request(request)
+
+        self.close_scheduler()
+        self.create_scheduler()
+
+        slots = list()
+        while self.scheduler.has_pending_requests():
+            slots.append(scheduler_slot(self.scheduler.next_request()))
+
+        for i in range(0, len(_SLOTS), 2):
+            self.assertNotEqual(slots[i], slots[i+1])
