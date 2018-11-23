@@ -168,6 +168,14 @@ class TestSchedulerWithRoundRobinInMemory(BaseSchedulerInMemoryTester, unittest.
         for i in range(0, len(_SLOTS), 2):
             self.assertNotEqual(slots[i], slots[i+1])
 
+    def test_is_meta_set(self):
+        url = "http://foo.com/a"
+        request = Request(url)
+        if SCHEDULER_SLOT_META_KEY in request.meta:
+            del request.meta[SCHEDULER_SLOT_META_KEY]
+        self.scheduler.enqueue_request(request)
+        self.assertIsNotNone(request.meta.get(SCHEDULER_SLOT_META_KEY, None))
+
 
 class TestSchedulerWithRoundRobinOnDisk(BaseSchedulerOnDiskTester, unittest.TestCase):
     priority_queue_cls = 'scrapy.core.queues.RoundRobinQueue'
@@ -186,6 +194,18 @@ class TestSchedulerWithRoundRobinOnDisk(BaseSchedulerOnDiskTester, unittest.Test
 
         for i in range(0, len(_SLOTS), 2):
             self.assertNotEqual(slots[i], slots[i+1])
+
+    def test_is_meta_set(self):
+        url = "http://foo.com/a"
+        request = Request(url)
+        if SCHEDULER_SLOT_META_KEY in request.meta:
+            del request.meta[SCHEDULER_SLOT_META_KEY]
+        self.scheduler.enqueue_request(request)
+
+        self.close_scheduler()
+        self.create_scheduler()
+
+        self.assertIsNotNone(request.meta.get(SCHEDULER_SLOT_META_KEY, None))
 
 
 @contextlib.contextmanager

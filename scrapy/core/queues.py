@@ -1,10 +1,12 @@
 from collections import deque
 import hashlib
 import logging
+from six.moves.urllib.parse import urlparse
 
 from queuelib import PriorityQueue
 
 from scrapy.core.downloader import Downloader
+from scrapy.http import Request
 
 
 logger = logging.getLogger(__name__)
@@ -13,14 +15,25 @@ logger = logging.getLogger(__name__)
 SCHEDULER_SLOT_META_KEY = Downloader.DOWNLOAD_SLOT
 
 
-def scheduler_slot(request):
-    meta = dict()
+def _get_from_request(request, key, default=None):
     if isinstance(request, dict):
-        meta = request.get('meta', dict())
-    else:
-        meta = getattr(request, 'meta', dict())
+        return request.get(key, default)
 
+    if isinstance(request, Request):
+        return getattr(request, key, default)
+
+    raise ValueError('Bad type of request "%s"' % (request.__class__, ))
+
+
+def scheduler_slot(request):
+    meta = _get_from_request(request, 'meta', dict())
     slot = meta.get(SCHEDULER_SLOT_META_KEY, None)
+
+    if slot is None:
+        url = _get_from_request(request, 'url')
+        slot = urlparse(url).hostname or ''
+        meta[SCHEDULER_SLOT_META_KEY] = slot
+
     return str(slot)
 
 
