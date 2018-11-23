@@ -4,11 +4,13 @@ import logging
 
 from queuelib import PriorityQueue
 
+from scrapy.core.downloader import Downloader
+
 
 logger = logging.getLogger(__name__)
 
 
-SCHEDULER_SLOT_META_KEY = 'downloader_slot'
+SCHEDULER_SLOT_META_KEY = Downloader.DOWNLOAD_SLOT
 
 
 def scheduler_slot(request):
