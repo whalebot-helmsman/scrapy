@@ -37,7 +37,13 @@ def scheduler_slot(request):
     return str(slot)
 
 
-_VERY_BIG = 2**32
+_BIG_POWER = 32
+_VERY_BIG = 2**_BIG_POWER
+_BIG_FORMAT='{0:0>%db}' % (_BIG_POWER + 1, )
+def _convert_priority(prio):
+    return _BIG_FORMAT.format(_VERY_BIG + prio)
+
+
 def _get_priority(slot, priority):
     """
         We want to provide some kind of fake priority for PriorityQueue.
@@ -55,7 +61,7 @@ def _get_priority(slot, priority):
         we add _VERY_BIG to number so negative numbers are positive and their
         string representation is smaller
     """
-    priority_part = str(_VERY_BIG + priority)
+    priority_part = _convert_priority(priority)
 
     """
         made slot value be used as a path
