@@ -59,10 +59,6 @@ def _get_priority(slot, priority):
         - should be useable as a path
     """
 
-    """
-        we add _VERY_BIG to number so negative numbers are positive and their
-        string representation is smaller
-    """
     priority_part = _convert_priority(priority)
 
     """
