@@ -3,7 +3,7 @@ import shutil
 import tempfile
 import unittest
 
-from scrapy.core.queues import SCHEDULER_SLOT_META_KEY, scheduler_slot
+from scrapy.pqueues import SCHEDULER_SLOT_META_KEY, scheduler_slot
 from scrapy.core.scheduler import Scheduler
 from scrapy.http import Request
 from scrapy.settings import Settings
