@@ -37,15 +37,6 @@ def scheduler_slot(request):
     return str(slot)
 
 
-_BIG_POWER = 32
-_VERY_BIG = 2**_BIG_POWER
-_BIG_FORMAT='{0:0>%db}' % (_BIG_POWER + 1, )
-def _convert_priority(prio):
-    if abs(prio) > _VERY_BIG:
-        raise ValueError('Cannot handle priority=%d' % (prio, ))
-    return _BIG_FORMAT.format(_VERY_BIG + prio)
-
-
 def _slot_as_path(slot):
     pathable_slot = "".join([c if c.isalnum() or c in '-._' else '_' for c in slot])
 
