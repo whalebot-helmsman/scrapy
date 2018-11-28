@@ -149,10 +149,8 @@ _SLOTS = [("http://foo.com/a", 'a'),
           ("http://foo.com/b", 'a'),
           ("http://foo.com/c", 'b'),
           ("http://foo.com/d", 'b'),
-          ("http://foo.com/e", 'd'),
-          ("http://foo.com/f", 'd'),
-          ("http://foo.com/g", 'c'),
-          ("http://foo.com/h", 'c')]
+          ("http://foo.com/e", 'c'),
+          ("http://foo.com/f", 'c')]
 
 
 class TestSchedulerWithRoundRobinInMemory(BaseSchedulerInMemoryTester, unittest.TestCase):
