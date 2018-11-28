@@ -3,14 +3,13 @@ import shutil
 import tempfile
 import unittest
 
-from scrapy.pqueues import SCHEDULER_SLOT_META_KEY, scheduler_slot
+from scrapy.crawler import Crawler
 from scrapy.core.scheduler import Scheduler
+from scrapy.pqueues import SCHEDULER_SLOT_META_KEY, scheduler_slot
 from scrapy.http import Request
-from scrapy.settings import Settings
 from scrapy.spiders import Spider
-from scrapy.statscollectors import DummyStatsCollector
 
-class MockCrawler:
+class MockCrawler(Crawler):
     def __init__(self, priority_queue_cls, jobdir):
 
         settings = dict(LOG_UNSERIALIZABLE_REQUESTS=False,
@@ -19,9 +18,7 @@ class MockCrawler:
                        SCHEDULER_PRIORITY_QUEUE=priority_queue_cls,
                        JOBDIR=jobdir,
                        DUPEFILTER_CLASS='scrapy.dupefilters.BaseDupeFilter')
-
-        self.settings = Settings(settings)
-        self.stats = DummyStatsCollector(self)
+        super(MockCrawler, self).__init__(Spider, settings)
 
 
 class SchedulerHandler:
