@@ -139,9 +139,6 @@ class RoundRobinPriorityQueue(SlotBasedPriorityQueue):
         self._slots.clear()
         return super(RoundRobinPriorityQueue, self).close()
 
-    def __len__(self):
-        return sum(len(x) for x in self.pqueues.values()) if self.pqueues else 0
-
 
 class DownloaderAwarePriorityQueue(SlotBasedPriorityQueue):
 
