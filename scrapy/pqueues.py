@@ -27,14 +27,24 @@ def _get_from_request(request, key, default=None):
     raise ValueError('Bad type of request "%s"' % (request.__class__, ))
 
 
-def scheduler_slot(request):
+def _scheduler_slot_read(request, default=None):
     meta = _get_from_request(request, 'meta', dict())
-    slot = meta.get(SCHEDULER_SLOT_META_KEY, None)
+    slot = meta.get(SCHEDULER_SLOT_META_KEY, default)
+    return slot
 
+
+def _scheduler_slot_write(request, slot):
+    meta = _get_from_request(request, 'meta', dict())
+    meta[SCHEDULER_SLOT_META_KEY] = slot
+
+
+def _scheduler_slot(request):
+
+    slot = _scheduler_slot_read(request, None)
     if slot is None:
         url = _get_from_request(request, 'url')
         slot = urlparse(url).hostname or ''
-        meta[SCHEDULER_SLOT_META_KEY] = slot
+        _scheduler_slot_write(request, slot)
 
     return slot
 
@@ -117,7 +127,7 @@ class SlotBasedPriorityQueue(object):
         return request, is_empty
 
     def push_slot(self, request, priority):
-        slot = scheduler_slot(request)
+        slot = _scheduler_slot(request)
         is_new = False
         if slot not in self.pqueues:
             is_new = True
@@ -198,7 +208,7 @@ class DownloaderAwarePriorityQueue(SlotBasedPriorityQueue):
             self._slots[slot] = 0
 
     def on_response_download(self, response, request, spider):
-        slot = scheduler_slot(request)
+        slot = _scheduler_slot_read(request)
         if slot not in self._slots or self._slots[slot] <= 0:
             raise ValueError('Get response for wrong slot "%s"' % (slot, ))
         self._slots[slot] = self._slots[slot] - 1
@@ -206,7 +216,7 @@ class DownloaderAwarePriorityQueue(SlotBasedPriorityQueue):
             del self._slots[slot]
 
     def on_request_reached_downloader(self, request, spider):
-        slot = scheduler_slot(request)
+        slot = _scheduler_slot_read(request)
         self._slots[slot] = self._slots.get(slot, 0) + 1
 
     def close(self):

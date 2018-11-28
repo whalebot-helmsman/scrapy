@@ -6,7 +6,7 @@ import unittest
 from scrapy.crawler import Crawler
 from scrapy.core.scheduler import Scheduler
 from scrapy.http import Request
-from scrapy.pqueues import SCHEDULER_SLOT_META_KEY, scheduler_slot
+from scrapy.pqueues import _scheduler_slot_read, _scheduler_slot_write
 from scrapy.signals import request_reached_downloader, response_downloaded
 from scrapy.spiders import Spider
 
@@ -160,12 +160,13 @@ class TestSchedulerWithRoundRobinInMemory(BaseSchedulerInMemoryTester, unittest.
 
     def test_round_robin(self):
         for url, slot in _SLOTS:
-            request = Request(url, meta={SCHEDULER_SLOT_META_KEY: slot})
+            request = Request(url)
+            _scheduler_slot_write(request, slot)
             self.scheduler.enqueue_request(request)
 
         slots = list()
         while self.scheduler.has_pending_requests():
-            slots.append(scheduler_slot(self.scheduler.next_request()))
+            slots.append(_scheduler_slot_read(self.scheduler.next_request()))
 
         for i in range(0, len(_SLOTS), 2):
             self.assertNotEqual(slots[i], slots[i+1])
@@ -173,10 +174,10 @@ class TestSchedulerWithRoundRobinInMemory(BaseSchedulerInMemoryTester, unittest.
     def test_is_meta_set(self):
         url = "http://foo.com/a"
         request = Request(url)
-        if SCHEDULER_SLOT_META_KEY in request.meta:
-            del request.meta[SCHEDULER_SLOT_META_KEY]
+        if _scheduler_slot_read(request):
+            _scheduler_slot_write(request, None)
         self.scheduler.enqueue_request(request)
-        self.assertIsNotNone(request.meta.get(SCHEDULER_SLOT_META_KEY, None))
+        self.assertIsNotNone(_scheduler_slot_read(request, None), None)
 
 
 class TestSchedulerWithRoundRobinOnDisk(BaseSchedulerOnDiskTester, unittest.TestCase):
@@ -184,7 +185,8 @@ class TestSchedulerWithRoundRobinOnDisk(BaseSchedulerOnDiskTester, unittest.Test
 
     def test_round_robin(self):
         for url, slot in _SLOTS:
-            request = Request(url, meta={SCHEDULER_SLOT_META_KEY: slot})
+            request = Request(url)
+            _scheduler_slot_write(request, slot)
             self.scheduler.enqueue_request(request)
 
         self.close_scheduler()
@@ -192,7 +194,7 @@ class TestSchedulerWithRoundRobinOnDisk(BaseSchedulerOnDiskTester, unittest.Test
 
         slots = list()
         while self.scheduler.has_pending_requests():
-            slots.append(scheduler_slot(self.scheduler.next_request()))
+            slots.append(_scheduler_slot_read(self.scheduler.next_request()))
 
         for i in range(0, len(_SLOTS), 2):
             self.assertNotEqual(slots[i], slots[i+1])
@@ -200,14 +202,14 @@ class TestSchedulerWithRoundRobinOnDisk(BaseSchedulerOnDiskTester, unittest.Test
     def test_is_meta_set(self):
         url = "http://foo.com/a"
         request = Request(url)
-        if SCHEDULER_SLOT_META_KEY in request.meta:
-            del request.meta[SCHEDULER_SLOT_META_KEY]
+        if _scheduler_slot_read(request):
+            _scheduler_slot_write(request, None)
         self.scheduler.enqueue_request(request)
 
         self.close_scheduler()
         self.create_scheduler()
 
-        self.assertIsNotNone(request.meta.get(SCHEDULER_SLOT_META_KEY, None))
+        self.assertIsNotNone(_scheduler_slot_read(request, None), None)
 
 
 @contextlib.contextmanager
@@ -246,14 +248,15 @@ class TestSchedulerWithDownloaderAwareInMemory(BaseSchedulerInMemoryTester, unit
 
     def test_logic(self):
         for url, slot in _SLOTS:
-            request = Request(url, meta={SCHEDULER_SLOT_META_KEY: slot})
+            request = Request(url)
+            _scheduler_slot_write(request, slot)
             self.scheduler.enqueue_request(request)
 
         slots = list()
         requests = list()
         while self.scheduler.has_pending_requests():
             request = self.scheduler.next_request()
-            slots.append(scheduler_slot(request))
+            slots.append(_scheduler_slot_read(self.scheduler.next_request()))
             self.mock_crawler.signals.send_catch_log(
                     signal=request_reached_downloader,
                     request=request,
@@ -277,7 +280,8 @@ class TestSchedulerWithDownloaderAwareOnDisk(BaseSchedulerOnDiskTester, unittest
     priority_queue_cls = 'scrapy.pqueues.DownloaderAwarePriorityQueue'
     def test_logic(self):
         for url, slot in _SLOTS:
-            request = Request(url, meta={SCHEDULER_SLOT_META_KEY: slot})
+            request = Request(url)
+            _scheduler_slot_write(request, slot)
             self.scheduler.enqueue_request(request)
 
         self.close_scheduler()
@@ -287,7 +291,7 @@ class TestSchedulerWithDownloaderAwareOnDisk(BaseSchedulerOnDiskTester, unittest
         requests = list()
         while self.scheduler.has_pending_requests():
             request = self.scheduler.next_request()
-            slots.append(scheduler_slot(request))
+            slots.append(_scheduler_slot_read(self.scheduler.next_request()))
             self.mock_crawler.signals.send_catch_log(
                     signal=request_reached_downloader,
                     request=request,
