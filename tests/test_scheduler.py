@@ -299,6 +299,8 @@ class TestSchedulerWithDownloaderAwareOnDisk(BaseSchedulerOnDiskTester, unittest
                     )
             requests.append(request)
 
+        self.assertEqual(self.scheduler.mqs._slots, {})
+
         for request in requests:
             self.mock_crawler.signals.send_catch_log(signal=response_downloaded,
                                                      request=request,
