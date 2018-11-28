@@ -154,7 +154,7 @@ _SLOTS = [("http://foo.com/a", 'a'),
 
 
 class TestSchedulerWithRoundRobinInMemory(BaseSchedulerInMemoryTester, unittest.TestCase):
-    priority_queue_cls = 'scrapy.pqueues.RoundRobinQueue'
+    priority_queue_cls = 'scrapy.pqueues.RoundRobinPriorityQueue'
 
     def test_round_robin(self):
         for url, slot in _SLOTS:
@@ -178,7 +178,7 @@ class TestSchedulerWithRoundRobinInMemory(BaseSchedulerInMemoryTester, unittest.
 
 
 class TestSchedulerWithRoundRobinOnDisk(BaseSchedulerOnDiskTester, unittest.TestCase):
-    priority_queue_cls = 'scrapy.pqueues.RoundRobinQueue'
+    priority_queue_cls = 'scrapy.pqueues.RoundRobinPriorityQueue'
 
     def test_round_robin(self):
         for url, slot in _SLOTS:
@@ -228,7 +228,7 @@ def _migration():
         prev_scheduler_handler.close_scheduler()
 
         next_scheduler_handler = SchedulerHandler()
-        next_scheduler_handler.priority_queue_cls = 'scrapy.pqueues.RoundRobinQueue'
+        next_scheduler_handler.priority_queue_cls = 'scrapy.pqueues.RoundRobinPriorityQueue'
         next_scheduler_handler.jobdir = tmp_dir
 
         next_scheduler_handler.create_scheduler()

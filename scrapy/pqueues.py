@@ -61,7 +61,7 @@ class PriorityAsTupleQueue(PriorityQueue):
                 )
 
 
-class RoundRobinQueue:
+class RoundRobinPriorityQueue:
 
     def __init__(self, qfactory, startprios={}):
         self._slots = deque()
