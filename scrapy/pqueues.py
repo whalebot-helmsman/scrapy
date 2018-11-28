@@ -7,6 +7,7 @@ from queuelib import PriorityQueue
 
 from scrapy.core.downloader import Downloader
 from scrapy.http import Request
+from scrapy.signals import request_reached_downloader, response_downloaded
 
 
 logger = logging.getLogger(__name__)
@@ -148,6 +149,10 @@ class DownloaderAwarePriorityQueue(SlotBasedPriorityQueue):
     def __init__(self, crawler, qfactory, startprios={}):
         super(DownloaderAwarePriorityQueue, self).__init__(qfactory, startprios)
         self._slots = {slot: 0 for slot in self.pqueues}
+        crawler.signals.connect(self.on_response_download,
+                                signal=response_downloaded)
+        crawler.signals.connect(self.on_request_reached_downloader,
+                                signal=request_reached_downloader)
 
     def pop(self):
         slots = [(s, d) for s,d in self._slots.items() if s in self.pqueues]
