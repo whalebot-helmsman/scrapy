@@ -34,6 +34,7 @@ class SchedulerHandler:
 
     def close_scheduler(self):
         self.scheduler.close('finished')
+        self.mock_crawler.stop()
 
     def setUp(self):
         self.create_scheduler()
