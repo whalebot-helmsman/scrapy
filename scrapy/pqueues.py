@@ -157,13 +157,17 @@ class DownloaderAwarePriorityQueue(SlotBasedPriorityQueue):
         return self.pop_slot(slot)[0]
 
     def push(self, request, priority):
-        self.push_slot(request, priority)
+        slot, _ = self.push_slot(request, priority)
+        if slot not in self._slots:
+            self._slots[slot] = 0
 
     def on_response_download(self, response, request, spider):
         slot = scheduler_slot(request)
         if slot not in self._slots or self._slots[slot] <= 0:
             raise ValueError('Get response for wrong slot "%s"' % (slot, ))
         self._slots[slot] = self._slots[slot] - 1
+        if self._slots[slot] == 0 and slot not in self.pqueues:
+            del self._slots[slot]
 
     def on_request_reached_downloader(self, request, spider):
         slot = scheduler_slot(request)
