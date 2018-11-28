@@ -237,3 +237,11 @@ def _migration():
 class TestMigration(unittest.TestCase):
     def test_migration(self):
         self.assertRaises(ValueError, _migration)
+
+
+class TestSchedulerWithDownloaderAwareInMemory(BaseSchedulerInMemoryTester, unittest.TestCase):
+    priority_queue_cls = 'scrapy.pqueues.DownloaderAwarePriorityQueue'
+
+
+class TestSchedulerWithDownloaderAwareOnDisk(BaseSchedulerOnDiskTester, unittest.TestCase):
+    priority_queue_cls = 'scrapy.pqueues.DownloaderAwarePriorityQueue'
