@@ -38,14 +38,14 @@ def scheduler_slot(request):
     return slot
 
 
-def _slot_as_path(slot):
-    pathable_slot = "".join([c if c.isalnum() or c in '-._' else '_' for c in slot])
+def _pathable(x):
+    pathable_slot = "".join([c if c.isalnum() or c in '-._' else '_' for c in x])
 
     """
         as we replace some letters we can get collision for different slots
         add we add unique part
     """
-    unique_slot = hashlib.md5(slot.encode('utf8')).hexdigest()
+    unique_slot = hashlib.md5(x.encode('utf8')).hexdigest()
 
     return '-'.join([pathable_slot, unique_slot])
 
@@ -67,7 +67,7 @@ class PrioritySlot:
        return (self.priority, self.slot) < (other.priority, other.slot)
 
     def __str__(self):
-       return '_'.join([str(self.priority), str(self.slot)])
+       return '_'.join([str(self.priority), _pathable(str(self.slot))])
 
 
 class PriorityAsTupleQueue(PriorityQueue):
