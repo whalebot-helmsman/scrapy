@@ -50,7 +50,10 @@ def _slot_as_path(slot):
 
 
 class PriorityAsTupleQueue(PriorityQueue):
-
+    """
+        Tuple is serialized into json as a list, which is unhashable. We need
+        this modified class to directly convert it to tuple.
+    """
     def __init__(self, qfactory, startprios=()):
         self.queues = {}
         self.qfactory = qfactory
