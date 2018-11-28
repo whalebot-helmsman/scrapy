@@ -111,7 +111,7 @@ class Scheduler(object):
         return self.mqclass()
 
     def _newdq(self, priority):
-        return self.dqclass(join(self.dqdir, 'p%s' % priority))
+        return self.dqclass(join(self.dqdir, 'p%s' % (priority, )))
 
     def _dq(self):
         activef = join(self.dqdir, 'active.json')
