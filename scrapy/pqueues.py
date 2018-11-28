@@ -55,12 +55,10 @@ class PriorityAsTupleQueue(PriorityQueue):
         this modified class to directly convert it to tuple.
     """
     def __init__(self, qfactory, startprios=()):
-        self.queues = {}
-        self.qfactory = qfactory
-        startprios = [tuple(x) for x in startprios]
-        for p in startprios:
-            self.queues[p] = self.qfactory(p)
-        self.curprio = min(startprios) if startprios else None
+        super(PriorityAsTupleQueue, self).__init__(
+                qfactory,
+                [tuple(p) for p in startprios]
+                )
 
 
 class RoundRobinQueue:
