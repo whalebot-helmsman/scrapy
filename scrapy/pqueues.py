@@ -1,6 +1,7 @@
 from collections import deque
 import hashlib
 import logging
+from six import text_type
 from six.moves.urllib.parse import urlparse
 
 from queuelib import PriorityQueue
@@ -67,7 +68,7 @@ class PrioritySlot:
        return (self.priority, self.slot) < (other.priority, other.slot)
 
     def __str__(self):
-       return '_'.join([str(self.priority), _pathable(str(self.slot))])
+       return '_'.join([text_type(self.priority), _pathable(text_type(self.slot))])
 
 
 class PriorityAsTupleQueue(PriorityQueue):
