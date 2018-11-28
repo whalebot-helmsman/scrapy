@@ -61,10 +61,9 @@ class PriorityAsTupleQueue(PriorityQueue):
                 )
 
 
-class RoundRobinPriorityQueue:
+class SlotBasedPriorityQueue:
 
     def __init__(self, qfactory, startprios={}):
-        self._slots = deque()
         self.pqueues = dict()     # slot -> priority queue
         self.qfactory = qfactory  # factory for creating new internal queues
 
@@ -78,8 +77,16 @@ class RoundRobinPriorityQueue:
                              "run again.")
 
         for slot, prios in startprios.items():
-            self._slots.append(slot)
             self.pqueues[slot] = PriorityAsTupleQueue(self.qfactory, prios)
+
+    def pop_slot(self, slot):
+        queue = self.pqueues[slot]
+        request = queue.pop()
+        is_empty = len(queue) == 0
+        if is_empty:
+            del self.pqueues[slot]
+
+        return request, is_empty
 
     def push(self, request, priority):
 
@@ -89,27 +96,41 @@ class RoundRobinPriorityQueue:
             self._slots.append(slot)
         self.pqueues[slot].push(request, (priority, _slot_as_path(slot)))
 
-    def pop(self):
-        if not self._slots:
-            return
-        slot = self._slots.popleft()
-        queue = self.pqueues[slot]
-        request = queue.pop()
-
-        if len(queue):
-            self._slots.append(slot)
-        else:
-            del self.pqueues[slot]
-        return request
-
     def close(self):
         startprios = dict()
         for slot, queue in self.pqueues.items():
             prios = queue.close()
             startprios[slot] = prios
         self.pqueues.clear()
-        self._slots.clear()
         return startprios
+
+    def __len__(self):
+        return sum(len(x) for x in self.pqueues.values()) if self.pqueues else 0
+
+
+class RoundRobinPriorityQueue(SlotBasedPriorityQueue):
+
+    def __init__(self, qfactory, startprios={}):
+        super(RoundRobinPriorityQueue, self).__init__(qfactory, startprios)
+        self._slots = deque()
+        for slot in self.pqueues:
+            self._slots.append(slot)
+
+    def pop(self):
+        if not self._slots:
+            return
+
+        slot = self._slots.popleft()
+        request, is_empty = self.pop_slot(slot)
+
+        if not is_empty:
+            self._slots.append(slot)
+
+        return request
+
+    def close(self):
+        self._slots.clear()
+        return super(RoundRobinPriorityQueue, self).close()
 
     def __len__(self):
         return sum(len(x) for x in self.pqueues.values()) if self.pqueues else 0
