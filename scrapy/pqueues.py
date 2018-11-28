@@ -35,7 +35,7 @@ def scheduler_slot(request):
         slot = urlparse(url).hostname or ''
         meta[SCHEDULER_SLOT_META_KEY] = slot
 
-    return str(slot)
+    return unicode(slot)
 
 
 def _slot_as_path(slot):
@@ -56,6 +56,7 @@ class PriorityAsTupleQueue(PriorityQueue):
         this modified class to directly convert it to tuple.
     """
     def __init__(self, qfactory, startprios=()):
+
         super(PriorityAsTupleQueue, self).__init__(
                 qfactory,
                 [tuple(p) for p in startprios]
