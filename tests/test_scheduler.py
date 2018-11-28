@@ -274,13 +274,13 @@ class TestSchedulerWithDownloaderAwareInMemory(BaseSchedulerInMemoryTester, unit
 class TestSchedulerWithDownloaderAwareOnDisk(BaseSchedulerOnDiskTester, unittest.TestCase):
     priority_queue_cls = 'scrapy.pqueues.DownloaderAwarePriorityQueue'
     def test_logic(self):
-        signals = self.mock_crawler.signals
         for url, slot in _SLOTS:
             request = Request(url, meta={SCHEDULER_SLOT_META_KEY: slot})
             self.scheduler.enqueue_request(request)
 
         self.close_scheduler()
         self.create_scheduler()
+        signals = self.mock_crawler.signals
 
         slots = list()
         requests = list()
