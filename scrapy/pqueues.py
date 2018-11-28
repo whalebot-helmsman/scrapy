@@ -151,6 +151,7 @@ class DownloaderAwarePriorityQueue(SlotBasedPriorityQueue):
 
     def __init__(self, crawler, qfactory, startprios={}):
         super(DownloaderAwarePriorityQueue, self).__init__(qfactory, startprios)
+        self._slots = dict()
 
     def pop(self):
         if not self.pqueues:
@@ -160,3 +161,17 @@ class DownloaderAwarePriorityQueue(SlotBasedPriorityQueue):
 
     def push(self, request, priority):
         self.push_slot(request, priority)
+
+    def on_response_download(self, response, request, spider):
+        slot = scheduler_slot(request)
+        if slot not in self._slots or self._slots[slot] <= 0:
+            raise ValueError('Get response for wrong slot "%s"' % (slot, ))
+        self._slots[slot] = self._slots[slot] - 1
+
+    def on_request_reached_downloader(self, request, spider):
+        slot = scheduler_slot(request)
+        self._slots[slot] = self._slots.get(slot, 0) + 1
+
+    def close(self):
+        self._slots.clear()
+        return super(DownloaderAwarePriorityQueue, self).close()
