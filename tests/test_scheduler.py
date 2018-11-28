@@ -245,7 +245,6 @@ class TestSchedulerWithDownloaderAwareInMemory(BaseSchedulerInMemoryTester, unit
     priority_queue_cls = 'scrapy.pqueues.DownloaderAwarePriorityQueue'
 
     def test_logic(self):
-        signals = self.mock_crawler.signals
         for url, slot in _SLOTS:
             request = Request(url, meta={SCHEDULER_SLOT_META_KEY: slot})
             self.scheduler.enqueue_request(request)
@@ -255,16 +254,18 @@ class TestSchedulerWithDownloaderAwareInMemory(BaseSchedulerInMemoryTester, unit
         while self.scheduler.has_pending_requests():
             request = self.scheduler.next_request()
             slots.append(scheduler_slot(request))
-            signals.send_catch_log(signal=request_reached_downloader,
-                                   request=request,
-                                   spider=self.spider)
+            self.mock_crawler.signals.send_catch_log(
+                    signal=request_reached_downloader,
+                    request=request,
+                    spider=self.spider
+                    )
             requests.append(request)
 
         for request in requests:
-            signals.send_catch_log(signal=response_downloaded,
-                                   request=request,
-                                   response=None,
-                                   spider=self.spider)
+            self.mock_crawler.signals.send_catch_log(signal=response_downloaded,
+                                                     request=request,
+                                                     response=None,
+                                                     spider=self.spider)
 
         unique_slots = len(set(s for _, s in _SLOTS))
         for i in range(0, len(_SLOTS), unique_slots):
@@ -281,23 +282,24 @@ class TestSchedulerWithDownloaderAwareOnDisk(BaseSchedulerOnDiskTester, unittest
 
         self.close_scheduler()
         self.create_scheduler()
-        signals = self.mock_crawler.signals
 
         slots = list()
         requests = list()
         while self.scheduler.has_pending_requests():
             request = self.scheduler.next_request()
             slots.append(scheduler_slot(request))
-            signals.send_catch_log(signal=request_reached_downloader,
-                                   request=request,
-                                   spider=self.spider)
+            self.mock_crawler.signals.send_catch_log(
+                    signal=request_reached_downloader,
+                    request=request,
+                    spider=self.spider
+                    )
             requests.append(request)
 
         for request in requests:
-            signals.send_catch_log(signal=response_downloaded,
-                                   request=request,
-                                   response=None,
-                                   spider=self.spider)
+            self.mock_crawler.signals.send_catch_log(signal=response_downloaded,
+                                                     request=request,
+                                                     response=None,
+                                                     spider=self.spider)
 
         unique_slots = len(set(s for _, s in _SLOTS))
         for i in range(0, len(_SLOTS), unique_slots):
