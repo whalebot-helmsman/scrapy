@@ -46,24 +46,7 @@ def _convert_priority(prio):
     return _BIG_FORMAT.format(_VERY_BIG + prio)
 
 
-def _get_priority(slot, priority):
-    """
-        We want to provide some kind of fake priority for PriorityQueue.
-        It should meet next requirements:
-
-        - should be writeable/readable to/from json without special handlers
-        - should be comparable
-        - should be hashasble
-        - should be different for different slots
-        - should be in same order as priority
-        - should be useable as a path
-    """
-
-    priority_part = _convert_priority(priority)
-
-    """
-        made slot value be used as a path
-    """
+def _slot_as_path(slot):
     pathable_slot = "".join([c if c.isalnum() or c in '-._' else '_' for c in slot])
 
     """
@@ -72,8 +55,18 @@ def _get_priority(slot, priority):
     """
     unique_slot = hashlib.md5(slot.encode('utf8')).hexdigest()
 
-    return '-'.join([priority_part, pathable_slot, unique_slot])
+    return '-'.join([pathable_slot, unique_slot])
 
+
+class PriorityAsTupleQueue(PriorityQueue):
+
+    def __init__(self, qfactory, startprios=()):
+        self.queues = {}
+        self.qfactory = qfactory
+        startprios = [tuple(x) for x in startprios]
+        for p in startprios:
+            self.queues[p] = self.qfactory(p)
+        self.curprio = min(startprios) if startprios else None
 
 
 class RoundRobinQueue:
@@ -94,15 +87,15 @@ class RoundRobinQueue:
 
         for slot, prios in startprios.items():
             self._slots.append(slot)
-            self.pqueues[slot] = PriorityQueue(self.qfactory, prios)
+            self.pqueues[slot] = PriorityAsTupleQueue(self.qfactory, prios)
 
     def push(self, request, priority):
 
         slot = scheduler_slot(request)
         if slot not in self.pqueues:
-            self.pqueues[slot] = PriorityQueue(self.qfactory)
+            self.pqueues[slot] = PriorityAsTupleQueue(self.qfactory)
             self._slots.append(slot)
-        self.pqueues[slot].push(request, _get_priority(slot, priority))
+        self.pqueues[slot].push(request, (priority, _slot_as_path(slot)))
 
     def pop(self):
         if not self._slots:
