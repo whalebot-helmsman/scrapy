@@ -62,7 +62,7 @@ class PriorityAsTupleQueue(PriorityQueue):
                 )
 
 
-class SlotBasedPriorityQueue:
+class SlotBasedPriorityQueue(object):
 
     def __init__(self, qfactory, startprios={}):
         self.pqueues = dict()     # slot -> priority queue
