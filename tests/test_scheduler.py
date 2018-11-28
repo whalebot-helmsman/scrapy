@@ -5,8 +5,9 @@ import unittest
 
 from scrapy.crawler import Crawler
 from scrapy.core.scheduler import Scheduler
-from scrapy.pqueues import SCHEDULER_SLOT_META_KEY, scheduler_slot
 from scrapy.http import Request
+from scrapy.pqueues import SCHEDULER_SLOT_META_KEY, scheduler_slot
+from scrapy.signals import request_reached_downloader, response_downloaded
 from scrapy.spiders import Spider
 
 class MockCrawler(Crawler):
@@ -26,9 +27,10 @@ class SchedulerHandler:
     jobdir = None
 
     def create_scheduler(self):
-        mock_crawler = MockCrawler(self.priority_queue_cls, self.jobdir)
-        self.scheduler = Scheduler.from_crawler(mock_crawler)
-        self.scheduler.open(Spider(name='spider'))
+        self.mock_crawler = MockCrawler(self.priority_queue_cls, self.jobdir)
+        self.scheduler = Scheduler.from_crawler(self.mock_crawler)
+        self.spider = Spider(name='spider')
+        self.scheduler.open(self.spider)
 
     def close_scheduler(self):
         self.scheduler.close('finished')
@@ -146,8 +148,10 @@ _SLOTS = [("http://foo.com/a", 'a'),
           ("http://foo.com/b", 'a'),
           ("http://foo.com/c", 'b'),
           ("http://foo.com/d", 'b'),
-          ("http://foo.com/d", 'c'),
-          ("http://foo.com/e", 'c')]
+          ("http://foo.com/e", 'd'),
+          ("http://foo.com/f", 'd'),
+          ("http://foo.com/g", 'c'),
+          ("http://foo.com/h", 'c')]
 
 
 class TestSchedulerWithRoundRobinInMemory(BaseSchedulerInMemoryTester, unittest.TestCase):
@@ -239,6 +243,62 @@ class TestMigration(unittest.TestCase):
 class TestSchedulerWithDownloaderAwareInMemory(BaseSchedulerInMemoryTester, unittest.TestCase):
     priority_queue_cls = 'scrapy.pqueues.DownloaderAwarePriorityQueue'
 
+    def test_logic(self):
+        signals = self.mock_crawler.signals
+        for url, slot in _SLOTS:
+            request = Request(url, meta={SCHEDULER_SLOT_META_KEY: slot})
+            self.scheduler.enqueue_request(request)
+
+        slots = list()
+        requests = list()
+        while self.scheduler.has_pending_requests():
+            request = self.scheduler.next_request()
+            slots.append(scheduler_slot(request))
+            signals.send_catch_log(signal=request_reached_downloader,
+                                   request=request,
+                                   spider=self.spider)
+            requests.append(request)
+
+        for request in requests:
+            signals.send_catch_log(signal=response_downloaded,
+                                   request=request,
+                                   response=None,
+                                   spider=self.spider)
+
+        unique_slots = len(set(s for _, s in _SLOTS))
+        for i in range(0, len(_SLOTS), unique_slots):
+            part = slots[i:i + unique_slots]
+            self.assertEqual(len(part), len(set(part)))
+
 
 class TestSchedulerWithDownloaderAwareOnDisk(BaseSchedulerOnDiskTester, unittest.TestCase):
     priority_queue_cls = 'scrapy.pqueues.DownloaderAwarePriorityQueue'
+    def test_logic(self):
+        signals = self.mock_crawler.signals
+        for url, slot in _SLOTS:
+            request = Request(url, meta={SCHEDULER_SLOT_META_KEY: slot})
+            self.scheduler.enqueue_request(request)
+
+        self.close_scheduler()
+        self.create_scheduler()
+
+        slots = list()
+        requests = list()
+        while self.scheduler.has_pending_requests():
+            request = self.scheduler.next_request()
+            slots.append(scheduler_slot(request))
+            signals.send_catch_log(signal=request_reached_downloader,
+                                   request=request,
+                                   spider=self.spider)
+            requests.append(request)
+
+        for request in requests:
+            signals.send_catch_log(signal=response_downloaded,
+                                   request=request,
+                                   response=None,
+                                   spider=self.spider)
+
+        unique_slots = len(set(s for _, s in _SLOTS))
+        for i in range(0, len(_SLOTS), unique_slots):
+            part = slots[i:i + unique_slots]
+            self.assertEqual(len(part), len(set(part)))
