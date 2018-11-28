@@ -35,7 +35,7 @@ def scheduler_slot(request):
         slot = urlparse(url).hostname or ''
         meta[SCHEDULER_SLOT_META_KEY] = slot
 
-    return unicode(slot)
+    return slot
 
 
 def _slot_as_path(slot):
@@ -50,6 +50,26 @@ def _slot_as_path(slot):
     return '-'.join([pathable_slot, unique_slot])
 
 
+class PrioritySlot:
+    __slots__ = ('priority', 'slot')
+
+    def __init__(self, priority=0, slot=None):
+        self.priority = priority
+        self.slot = slot
+
+    def __hash__(self):
+       return hash((self.priority, self.slot))
+
+    def __eq__(self, other):
+       return (self.priority, self.slot) == (other.priority, other.slot)
+
+    def __lt__(self, other):
+       return (self.priority, self.slot) < (other.priority, other.slot)
+
+    def __str__(self):
+       return '_'.join([str(self.priority), str(self.slot)])
+
+
 class PriorityAsTupleQueue(PriorityQueue):
     """
         Tuple is serialized into json as a list, which is unhashable. We need
@@ -59,8 +79,12 @@ class PriorityAsTupleQueue(PriorityQueue):
 
         super(PriorityAsTupleQueue, self).__init__(
                 qfactory,
-                [tuple(p) for p in startprios]
+                [PrioritySlot(priority=p[0], slot=p[1]) for p in startprios]
                 )
+
+    def close(self):
+        startprios = super(PriorityAsTupleQueue, self).close()
+        return [(s.priority, s.slot) for s in startprios]
 
 
 class SlotBasedPriorityQueue(object):
@@ -96,7 +120,7 @@ class SlotBasedPriorityQueue(object):
         if slot not in self.pqueues:
             is_new = True
             self.pqueues[slot] = PriorityAsTupleQueue(self.qfactory)
-        self.pqueues[slot].push(request, (priority, _slot_as_path(slot)))
+        self.pqueues[slot].push(request, PrioritySlot(priority=priority, slot=slot))
         return slot, is_new
 
     def close(self):
