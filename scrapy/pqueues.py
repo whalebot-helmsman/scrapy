@@ -1,6 +1,7 @@
 from collections import deque
 import hashlib
 import logging
+import random
 from six.moves.urllib.parse import urlparse
 
 from queuelib import PriorityQueue
@@ -88,13 +89,14 @@ class SlotBasedPriorityQueue:
 
         return request, is_empty
 
-    def push(self, request, priority):
-
+    def push_slot(self, request, priority):
         slot = scheduler_slot(request)
+        is_new = False
         if slot not in self.pqueues:
+            is_new = True
             self.pqueues[slot] = PriorityAsTupleQueue(self.qfactory)
-            self._slots.append(slot)
         self.pqueues[slot].push(request, (priority, _slot_as_path(slot)))
+        return slot, is_new
 
     def close(self):
         startprios = dict()
@@ -116,6 +118,11 @@ class RoundRobinPriorityQueue(SlotBasedPriorityQueue):
         for slot in self.pqueues:
             self._slots.append(slot)
 
+    def push(self, request, priority):
+        slot, is_new = self.push_slot(request, priority)
+        if is_new:
+            self._slots.append(slot)
+
     def pop(self):
         if not self._slots:
             return
@@ -134,3 +141,22 @@ class RoundRobinPriorityQueue(SlotBasedPriorityQueue):
 
     def __len__(self):
         return sum(len(x) for x in self.pqueues.values()) if self.pqueues else 0
+
+
+class DownloaderAwarePriorityQueue(SlotBasedPriorityQueue):
+
+    @classmethod
+    def from_crawler(cls, crawler, qfactory, startprios={}):
+        return cls(crawler, qfactory, startprios)
+
+    def __init__(self, crawler, qfactory, startprios={}):
+        super(DownloaderAwarePriorityQueue, self).__init__(qfactory, startprios)
+
+    def pop(self):
+        if not self.pqueues:
+            return
+        slot = random.choice([k for k in self.pqueues])
+        return self.pop_slot(slot)[0]
+
+    def push(self, request, priority):
+        self.push_slot(request, priority)
