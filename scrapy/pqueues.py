@@ -179,6 +179,8 @@ class RoundRobinPriorityQueue(SlotBasedPriorityQueue):
 
 class DownloaderAwarePriorityQueue(SlotBasedPriorityQueue):
 
+    _DOWNLOADER_AWARE_PQ_ID = 'DOWNLOADER_AWARE_PQ_ID'
+
     @classmethod
     def from_crawler(cls, crawler, qfactory, startprios={}):
         return cls(crawler, qfactory, startprios)
@@ -190,6 +192,14 @@ class DownloaderAwarePriorityQueue(SlotBasedPriorityQueue):
                                 signal=response_downloaded)
         crawler.signals.connect(self.on_request_reached_downloader,
                                 signal=request_reached_downloader)
+
+    def mark(self, request):
+        meta = _get_from_request(request, 'meta', dict())
+        meta[self._DOWNLOADER_AWARE_PQ_ID] = id(self)
+
+    def check_mark(self, request):
+        meta = _get_from_request(request, 'meta', dict())
+        return meta.get(self._DOWNLOADER_AWARE_PQ_ID, None) == id(self)
 
     def pop(self):
         slots = [(s, d) for s,d in self._slots.items() if s in self.pqueues]
@@ -208,6 +218,9 @@ class DownloaderAwarePriorityQueue(SlotBasedPriorityQueue):
             self._slots[slot] = 0
 
     def on_response_download(self, response, request, spider):
+        if not self.check_mark(request):
+            return
+
         slot = _scheduler_slot_read(request)
         if slot not in self._slots or self._slots[slot] <= 0:
             raise ValueError('Get response for wrong slot "%s"' % (slot, ))
@@ -216,6 +229,9 @@ class DownloaderAwarePriorityQueue(SlotBasedPriorityQueue):
             del self._slots[slot]
 
     def on_request_reached_downloader(self, request, spider):
+        if not self.check_mark(request):
+            return
+
         slot = _scheduler_slot_read(request)
         self._slots[slot] = self._slots.get(slot, 0) + 1
 
