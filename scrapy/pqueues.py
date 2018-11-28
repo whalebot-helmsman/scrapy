@@ -1,7 +1,6 @@
 from collections import deque
 import hashlib
 import logging
-import random
 from six.moves.urllib.parse import urlparse
 
 from queuelib import PriorityQueue
@@ -153,8 +152,16 @@ class DownloaderAwarePriorityQueue(SlotBasedPriorityQueue):
     def pop(self):
         if not self.pqueues:
             return
-        slot = random.choice([k for k in self.pqueues])
-        return self.pop_slot(slot)[0]
+
+        slots = [(s, d) for s,d in self._slots.items() if s in self.pqueues]
+        slots.sort(key=lambda p:(p[1], p[0]))
+
+        if not slots:
+            return
+
+        slot = slots[0][0]
+        request, _ = self.pop_slot(slot)
+        return request
 
     def push(self, request, priority):
         slot, _ = self.push_slot(request, priority)
