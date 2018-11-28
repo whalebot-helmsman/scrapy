@@ -147,12 +147,9 @@ class DownloaderAwarePriorityQueue(SlotBasedPriorityQueue):
 
     def __init__(self, crawler, qfactory, startprios={}):
         super(DownloaderAwarePriorityQueue, self).__init__(qfactory, startprios)
-        self._slots = dict()
+        self._slots = {slot: 0 for slot in self.pqueues}
 
     def pop(self):
-        if not self.pqueues:
-            return
-
         slots = [(s, d) for s,d in self._slots.items() if s in self.pqueues]
         slots.sort(key=lambda p:(p[1], p[0]))
 
