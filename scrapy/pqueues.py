@@ -34,7 +34,9 @@ def _scheduler_slot_read(request, default=None):
 
 
 def _scheduler_slot_write(request, slot):
-    meta = _get_from_request(request, 'meta', dict())
+    meta = _get_from_request(request, 'meta', None)
+    if not isinstance(meta, dict):
+        raise ValueError('No meta attribute in %s' % (request, ))
     meta[SCHEDULER_SLOT_META_KEY] = slot
 
 
@@ -194,7 +196,9 @@ class DownloaderAwarePriorityQueue(SlotBasedPriorityQueue):
                                 signal=request_reached_downloader)
 
     def mark(self, request):
-        meta = _get_from_request(request, 'meta', dict())
+        meta = _get_from_request(request, 'meta', None)
+        if not isinstance(meta, dict):
+            raise ValueError('No meta attribute in %s' % (request, ))
         meta[self._DOWNLOADER_AWARE_PQ_ID] = id(self)
 
     def check_mark(self, request):
