@@ -261,6 +261,7 @@ class TestSchedulerWithDownloaderAwareInMemory(BaseSchedulerInMemoryTester, unit
                     spider=self.spider
                     )
             requests.append(request)
+        self.assertEqual(len(slots), len(_SLOTS))
 
         for request in requests:
             self.mock_crawler.signals.send_catch_log(signal=response_downloaded,
@@ -298,6 +299,7 @@ class TestSchedulerWithDownloaderAwareOnDisk(BaseSchedulerOnDiskTester, unittest
             requests.append(request)
 
         self.assertEqual(self.scheduler.mqs._slots, {})
+        self.assertEqual(len(slots), len(_SLOTS))
 
         for request in requests:
             self.mock_crawler.signals.send_catch_log(signal=response_downloaded,
