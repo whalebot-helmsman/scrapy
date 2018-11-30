@@ -100,6 +100,9 @@ class PriorityAsTupleQueue(PriorityQueue):
         startprios = super(PriorityAsTupleQueue, self).close()
         return [(s.priority, s.slot) for s in startprios]
 
+    def is_empty(self):
+        return not self.queues
+
 
 class SlotBasedPriorityQueue(object):
 
@@ -122,7 +125,7 @@ class SlotBasedPriorityQueue(object):
     def pop_slot(self, slot):
         queue = self.pqueues[slot]
         request = queue.pop()
-        is_empty = len(queue) == 0
+        is_empty = queue.is_empty()
         if is_empty:
             del self.pqueues[slot]
 
