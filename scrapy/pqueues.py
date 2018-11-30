@@ -214,6 +214,7 @@ class DownloaderAwarePriorityQueue(SlotBasedPriorityQueue):
 
         slot = slots[0][0]
         request, _ = self.pop_slot(slot)
+        self.mark(request)
         return request
 
     def push(self, request, priority):
