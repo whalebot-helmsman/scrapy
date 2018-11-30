@@ -254,7 +254,7 @@ class TestSchedulerWithDownloaderAwareInMemory(BaseSchedulerInMemoryTester, unit
         requests = list()
         while self.scheduler.has_pending_requests():
             request = self.scheduler.next_request()
-            slots.append(_scheduler_slot_read(self.scheduler.next_request()))
+            slots.append(_scheduler_slot_read(request))
             self.mock_crawler.signals.send_catch_log(
                     signal=request_reached_downloader,
                     request=request,
@@ -290,7 +290,7 @@ class TestSchedulerWithDownloaderAwareOnDisk(BaseSchedulerOnDiskTester, unittest
         requests = list()
         while self.scheduler.has_pending_requests():
             request = self.scheduler.next_request()
-            slots.append(_scheduler_slot_read(self.scheduler.next_request()))
+            slots.append(_scheduler_slot_read(request))
             self.mock_crawler.signals.send_catch_log(
                     signal=request_reached_downloader,
                     request=request,
