@@ -205,8 +205,7 @@ class DownloaderAwarePriorityQueue(SlotBasedPriorityQueue):
         meta[self._DOWNLOADER_AWARE_PQ_ID] = id(self)
 
     def check_mark(self, request):
-        meta = _get_from_request(request, 'meta', dict())
-        return meta.get(self._DOWNLOADER_AWARE_PQ_ID, None) == id(self)
+        return request.meta.get(self._DOWNLOADER_AWARE_PQ_ID, None) == id(self)
 
     def pop(self):
         slots = [(s, d) for s,d in self._slots.items() if s in self.pqueues]
