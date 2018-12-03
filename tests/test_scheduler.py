@@ -213,8 +213,10 @@ class TestSchedulerWithRoundRobinOnDisk(BaseSchedulerOnDiskTester, unittest.Test
 @contextlib.contextmanager
 def mkdtemp():
     dir = tempfile.mkdtemp()
-    yield dir
-    shutil.rmtree(dir)
+    try:
+        yield dir
+    finally:
+        shutil.rmtree(dir)
 
 
 def _migration():
