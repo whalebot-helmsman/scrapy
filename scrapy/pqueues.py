@@ -208,13 +208,12 @@ class DownloaderAwarePriorityQueue(SlotBasedPriorityQueue):
         return request.meta.get(self._DOWNLOADER_AWARE_PQ_ID, None) == id(self)
 
     def pop(self):
-        slots = [(s, d) for s,d in self._slots.items() if s in self.pqueues]
-        slots.sort(key=lambda p:(p[1], p[0]))
+        slots = [(d, s) for s,d in self._slots.items() if s in self.pqueues]
 
         if not slots:
             return
 
-        slot = slots[0][0]
+        slot = min(slots)[1]
         request, _ = self.pop_slot(slot)
         self.mark(request)
         return request
