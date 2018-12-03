@@ -101,7 +101,7 @@ class PriorityAsTupleQueue(PriorityQueue):
         return [(s.priority, s.slot) for s in startprios]
 
     def is_empty(self):
-        return not self.queues
+        return not self.queues or len(self) == 0
 
 
 class SlotBasedPriorityQueue(object):
