@@ -1,7 +1,8 @@
-import contextlib
 import shutil
 import tempfile
 import unittest
+
+import pytest
 
 from scrapy.crawler import Crawler
 from scrapy.core.scheduler import Scheduler
@@ -210,37 +211,26 @@ class TestSchedulerWithRoundRobinOnDisk(BaseSchedulerOnDiskTester, unittest.Test
         self.assertIsNotNone(_scheduler_slot_read(request, None), None)
 
 
-@contextlib.contextmanager
-def mkdtemp():
-    dir = tempfile.mkdtemp()
-    try:
-        yield dir
-    finally:
-        shutil.rmtree(dir)
+def _migration(tmp_dir):
+    prev_scheduler_handler = SchedulerHandler()
+    prev_scheduler_handler.priority_queue_cls = 'queuelib.PriorityQueue'
+    prev_scheduler_handler.jobdir = tmp_dir
+
+    prev_scheduler_handler.create_scheduler()
+    for url in _URLS:
+        prev_scheduler_handler.scheduler.enqueue_request(Request(url))
+    prev_scheduler_handler.close_scheduler()
+
+    next_scheduler_handler = SchedulerHandler()
+    next_scheduler_handler.priority_queue_cls = 'scrapy.pqueues.RoundRobinPriorityQueue'
+    next_scheduler_handler.jobdir = tmp_dir
+
+    next_scheduler_handler.create_scheduler()
 
 
-def _migration():
-
-    with mkdtemp() as tmp_dir:
-        prev_scheduler_handler = SchedulerHandler()
-        prev_scheduler_handler.priority_queue_cls = 'queuelib.PriorityQueue'
-        prev_scheduler_handler.jobdir = tmp_dir
-
-        prev_scheduler_handler.create_scheduler()
-        for url in _URLS:
-            prev_scheduler_handler.scheduler.enqueue_request(Request(url))
-        prev_scheduler_handler.close_scheduler()
-
-        next_scheduler_handler = SchedulerHandler()
-        next_scheduler_handler.priority_queue_cls = 'scrapy.pqueues.RoundRobinPriorityQueue'
-        next_scheduler_handler.jobdir = tmp_dir
-
-        next_scheduler_handler.create_scheduler()
-
-
-class TestMigration(unittest.TestCase):
-    def test_migration(self):
-        self.assertRaises(ValueError, _migration)
+def test_migration(tmpdir):
+    with pytest.raises(ValueError):
+        _migration(str(tmpdir.mkdir('migration')))
 
 
 class TestSchedulerWithDownloaderAwareInMemory(BaseSchedulerInMemoryTester, unittest.TestCase):
