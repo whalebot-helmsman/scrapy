@@ -135,9 +135,10 @@ class SlotBasedPriorityQueue(object):
         slot = _scheduler_slot(request)
         is_new = False
         if slot not in self.pqueues:
-            is_new = True
             self.pqueues[slot] = PriorityAsTupleQueue(self.qfactory)
-        self.pqueues[slot].push(request, PrioritySlot(priority=priority, slot=slot))
+        queue = self.pqueues[slot]
+        is_new = queue.is_empty()
+        queue.push(request, PrioritySlot(priority=priority, slot=slot))
         return slot, is_new
 
     def close(self):
