@@ -1,4 +1,3 @@
-from collections import deque
 import hashlib
 import logging
 from six import text_type
@@ -150,36 +149,6 @@ class SlotBasedPriorityQueue(object):
 
     def __len__(self):
         return sum(len(x) for x in self.pqueues.values()) if self.pqueues else 0
-
-
-class RoundRobinPriorityQueue(SlotBasedPriorityQueue):
-
-    def __init__(self, qfactory, startprios={}):
-        super(RoundRobinPriorityQueue, self).__init__(qfactory, startprios)
-        self._slots = deque()
-        for slot in self.pqueues:
-            self._slots.append(slot)
-
-    def push(self, request, priority):
-        slot, is_new = self.push_slot(request, priority)
-        if is_new:
-            self._slots.append(slot)
-
-    def pop(self):
-        if not self._slots:
-            return
-
-        slot = self._slots.popleft()
-        request, is_empty = self.pop_slot(slot)
-
-        if not is_empty:
-            self._slots.append(slot)
-
-        return request
-
-    def close(self):
-        self._slots.clear()
-        return super(RoundRobinPriorityQueue, self).close()
 
 
 class DownloaderAwarePriorityQueue(SlotBasedPriorityQueue):

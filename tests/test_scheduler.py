@@ -154,63 +154,6 @@ _SLOTS = [("http://foo.com/a", 'a'),
           ("http://foo.com/f", 'c')]
 
 
-class TestSchedulerWithRoundRobinInMemory(BaseSchedulerInMemoryTester, unittest.TestCase):
-    priority_queue_cls = 'scrapy.pqueues.RoundRobinPriorityQueue'
-
-    def test_round_robin(self):
-        for url, slot in _SLOTS:
-            request = Request(url)
-            _scheduler_slot_write(request, slot)
-            self.scheduler.enqueue_request(request)
-
-        slots = list()
-        while self.scheduler.has_pending_requests():
-            slots.append(_scheduler_slot_read(self.scheduler.next_request()))
-
-        for i in range(0, len(_SLOTS), 2):
-            self.assertNotEqual(slots[i], slots[i+1])
-
-    def test_is_meta_set(self):
-        url = "http://foo.com/a"
-        request = Request(url)
-        if _scheduler_slot_read(request):
-            _scheduler_slot_write(request, None)
-        self.scheduler.enqueue_request(request)
-        self.assertIsNotNone(_scheduler_slot_read(request, None), None)
-
-
-class TestSchedulerWithRoundRobinOnDisk(BaseSchedulerOnDiskTester, unittest.TestCase):
-    priority_queue_cls = 'scrapy.pqueues.RoundRobinPriorityQueue'
-
-    def test_round_robin(self):
-        for url, slot in _SLOTS:
-            request = Request(url)
-            _scheduler_slot_write(request, slot)
-            self.scheduler.enqueue_request(request)
-
-        self.close_scheduler()
-        self.create_scheduler()
-
-        slots = list()
-        while self.scheduler.has_pending_requests():
-            slots.append(_scheduler_slot_read(self.scheduler.next_request()))
-
-        for i in range(0, len(_SLOTS), 2):
-            self.assertNotEqual(slots[i], slots[i+1])
-
-    def test_is_meta_set(self):
-        url = "http://foo.com/a"
-        request = Request(url)
-        if _scheduler_slot_read(request):
-            _scheduler_slot_write(request, None)
-        self.scheduler.enqueue_request(request)
-
-        self.close_scheduler()
-        self.create_scheduler()
-
-        self.assertIsNotNone(_scheduler_slot_read(request, None), None)
-
-
 def _migration(tmp_dir):
     prev_scheduler_handler = SchedulerHandler()
     prev_scheduler_handler.priority_queue_cls = 'queuelib.PriorityQueue'
@@ -222,7 +165,7 @@ def _migration(tmp_dir):
     prev_scheduler_handler.close_scheduler()
 
     next_scheduler_handler = SchedulerHandler()
-    next_scheduler_handler.priority_queue_cls = 'scrapy.pqueues.RoundRobinPriorityQueue'
+    next_scheduler_handler.priority_queue_cls = 'scrapy.pqueues.DownloaderAwarePriorityQueue'
     next_scheduler_handler.jobdir = tmp_dir
 
     next_scheduler_handler.create_scheduler()
