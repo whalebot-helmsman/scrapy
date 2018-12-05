@@ -2,8 +2,6 @@ import shutil
 import tempfile
 import unittest
 
-import pytest
-
 from scrapy.crawler import Crawler
 from scrapy.core.scheduler import Scheduler
 from scrapy.http import Request
@@ -182,7 +180,7 @@ class TestMigration(unittest.TestCase):
             next_scheduler_handler.close_scheduler()
 
     def test_migration(self):
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
             self._migration(self.tmpdir)
 
 
