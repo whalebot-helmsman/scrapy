@@ -154,26 +154,36 @@ _SLOTS = [("http://foo.com/a", 'a'),
           ("http://foo.com/f", 'c')]
 
 
-def _migration(tmp_dir):
-    prev_scheduler_handler = SchedulerHandler()
-    prev_scheduler_handler.priority_queue_cls = 'queuelib.PriorityQueue'
-    prev_scheduler_handler.jobdir = tmp_dir
+class TestMigration(unittest.TestCase):
 
-    prev_scheduler_handler.create_scheduler()
-    for url in _URLS:
-        prev_scheduler_handler.scheduler.enqueue_request(Request(url))
-    prev_scheduler_handler.close_scheduler()
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
 
-    next_scheduler_handler = SchedulerHandler()
-    next_scheduler_handler.priority_queue_cls = 'scrapy.pqueues.DownloaderAwarePriorityQueue'
-    next_scheduler_handler.jobdir = tmp_dir
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir)
 
-    next_scheduler_handler.create_scheduler()
+    def _migration(self, tmp_dir):
+        prev_scheduler_handler = SchedulerHandler()
+        prev_scheduler_handler.priority_queue_cls = 'queuelib.PriorityQueue'
+        prev_scheduler_handler.jobdir = tmp_dir
 
+        prev_scheduler_handler.create_scheduler()
+        for url in _URLS:
+            prev_scheduler_handler.scheduler.enqueue_request(Request(url))
+        prev_scheduler_handler.close_scheduler()
 
-def test_migration(tmpdir):
-    with pytest.raises(ValueError):
-        _migration(str(tmpdir.mkdir('migration')))
+        next_scheduler_handler = SchedulerHandler()
+        next_scheduler_handler.priority_queue_cls = 'scrapy.pqueues.DownloaderAwarePriorityQueue'
+        next_scheduler_handler.jobdir = tmp_dir
+
+        try:
+            next_scheduler_handler.create_scheduler()
+        finally:
+            next_scheduler_handler.close_scheduler()
+
+    def test_migration(self):
+        with pytest.raises(ValueError):
+            self._migration(self.tmpdir)
 
 
 class TestSchedulerWithDownloaderAwareInMemory(BaseSchedulerInMemoryTester, unittest.TestCase):
