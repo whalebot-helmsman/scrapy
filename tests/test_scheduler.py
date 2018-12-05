@@ -174,10 +174,7 @@ class TestMigration(unittest.TestCase):
         next_scheduler_handler.priority_queue_cls = 'scrapy.pqueues.DownloaderAwarePriorityQueue'
         next_scheduler_handler.jobdir = tmp_dir
 
-        try:
-            next_scheduler_handler.create_scheduler()
-        finally:
-            next_scheduler_handler.close_scheduler()
+        next_scheduler_handler.create_scheduler()
 
     def test_migration(self):
         with self.assertRaises(ValueError):

@@ -46,7 +46,7 @@ class Scheduler(object):
         return self.df.open()
 
     def close(self, reason):
-        if getattr(self, 'dqs', None):
+        if self.dqs:
             prios = self.dqs.close()
             with open(join(self.dqdir, 'active.json'), 'w') as f:
                 json.dump(prios, f)
