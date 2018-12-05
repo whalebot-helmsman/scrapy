@@ -70,16 +70,17 @@ class PrioritySlot:
         self.slot = slot
 
     def __hash__(self):
-       return hash((self.priority, self.slot))
+        return hash((self.priority, self.slot))
 
     def __eq__(self, other):
-       return (self.priority, self.slot) == (other.priority, other.slot)
+        return (self.priority, self.slot) == (other.priority, other.slot)
 
     def __lt__(self, other):
-       return (self.priority, self.slot) < (other.priority, other.slot)
+        return (self.priority, self.slot) < (other.priority, other.slot)
 
     def __str__(self):
-       return '_'.join([text_type(self.priority), _pathable(text_type(self.slot))])
+        return '_'.join([text_type(self.priority),
+                         _pathable(text_type(self.slot))])
 
 
 class PriorityAsTupleQueue(PriorityQueue):
@@ -161,7 +162,8 @@ class DownloaderAwarePriorityQueue(SlotBasedPriorityQueue):
         return cls(crawler, qfactory, startprios)
 
     def __init__(self, crawler, qfactory, startprios={}):
-        super(DownloaderAwarePriorityQueue, self).__init__(qfactory, startprios)
+        super(DownloaderAwarePriorityQueue, self).__init__(qfactory,
+                                                           startprios)
         self._slots = {slot: 0 for slot in self.pqueues}
         crawler.signals.connect(self.on_response_download,
                                 signal=response_downloaded)
@@ -178,7 +180,7 @@ class DownloaderAwarePriorityQueue(SlotBasedPriorityQueue):
         return request.meta.get(self._DOWNLOADER_AWARE_PQ_ID, None) == id(self)
 
     def pop(self):
-        slots = [(d, s) for s,d in self._slots.items() if s in self.pqueues]
+        slots = [(d, s) for s, d in self._slots.items() if s in self.pqueues]
 
         if not slots:
             return

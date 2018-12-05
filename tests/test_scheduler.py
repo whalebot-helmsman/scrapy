@@ -9,15 +9,18 @@ from scrapy.pqueues import _scheduler_slot_read, _scheduler_slot_write
 from scrapy.signals import request_reached_downloader, response_downloaded
 from scrapy.spiders import Spider
 
+
 class MockCrawler(Crawler):
     def __init__(self, priority_queue_cls, jobdir):
 
-        settings = dict(LOG_UNSERIALIZABLE_REQUESTS=False,
-                       SCHEDULER_DISK_QUEUE='scrapy.squeues.PickleLifoDiskQueue',
-                       SCHEDULER_MEMORY_QUEUE='scrapy.squeues.LifoMemoryQueue',
-                       SCHEDULER_PRIORITY_QUEUE=priority_queue_cls,
-                       JOBDIR=jobdir,
-                       DUPEFILTER_CLASS='scrapy.dupefilters.BaseDupeFilter')
+        settings = dict(
+                LOG_UNSERIALIZABLE_REQUESTS=False,
+                SCHEDULER_DISK_QUEUE='scrapy.squeues.PickleLifoDiskQueue',
+                SCHEDULER_MEMORY_QUEUE='scrapy.squeues.LifoMemoryQueue',
+                SCHEDULER_PRIORITY_QUEUE=priority_queue_cls,
+                JOBDIR=jobdir,
+                DUPEFILTER_CLASS='scrapy.dupefilters.BaseDupeFilter'
+                )
         super(MockCrawler, self).__init__(Spider, settings)
 
 
@@ -81,7 +84,8 @@ class BaseSchedulerInMemoryTester(SchedulerHandler):
         while self.scheduler.has_pending_requests():
             priorities.append(self.scheduler.next_request().priority)
 
-        self.assertEqual(priorities, sorted([x[1] for x in _PRIORITIES], key=lambda x: -x))
+        self.assertEqual(priorities,
+                         sorted([x[1] for x in _PRIORITIES], key=lambda x: -x))
 
 
 class BaseSchedulerOnDiskTester(SchedulerHandler):
@@ -133,7 +137,8 @@ class BaseSchedulerOnDiskTester(SchedulerHandler):
         while self.scheduler.has_pending_requests():
             priorities.append(self.scheduler.next_request().priority)
 
-        self.assertEqual(priorities, sorted([x[1] for x in _PRIORITIES], key=lambda x: -x))
+        self.assertEqual(priorities,
+                         sorted([x[1] for x in _PRIORITIES], key=lambda x: -x))
 
 
 class TestSchedulerInMemory(BaseSchedulerInMemoryTester, unittest.TestCase):
@@ -181,7 +186,8 @@ class TestMigration(unittest.TestCase):
             self._migration(self.tmpdir)
 
 
-class TestSchedulerWithDownloaderAwareInMemory(BaseSchedulerInMemoryTester, unittest.TestCase):
+class TestSchedulerWithDownloaderAwareInMemory(BaseSchedulerInMemoryTester,
+                                               unittest.TestCase):
     priority_queue_cls = 'scrapy.pqueues.DownloaderAwarePriorityQueue'
 
     def test_logic(self):
@@ -204,10 +210,12 @@ class TestSchedulerWithDownloaderAwareInMemory(BaseSchedulerInMemoryTester, unit
         self.assertEqual(len(slots), len(_SLOTS))
 
         for request in requests:
-            self.mock_crawler.signals.send_catch_log(signal=response_downloaded,
-                                                     request=request,
-                                                     response=None,
-                                                     spider=self.spider)
+            self.mock_crawler.signals.send_catch_log(
+                    signal=response_downloaded,
+                    request=request,
+                    response=None,
+                    spider=self.spider
+                    )
 
         unique_slots = len(set(s for _, s in _SLOTS))
         for i in range(0, len(_SLOTS), unique_slots):
@@ -215,8 +223,10 @@ class TestSchedulerWithDownloaderAwareInMemory(BaseSchedulerInMemoryTester, unit
             self.assertEqual(len(part), len(set(part)))
 
 
-class TestSchedulerWithDownloaderAwareOnDisk(BaseSchedulerOnDiskTester, unittest.TestCase):
+class TestSchedulerWithDownloaderAwareOnDisk(BaseSchedulerOnDiskTester,
+                                             unittest.TestCase):
     priority_queue_cls = 'scrapy.pqueues.DownloaderAwarePriorityQueue'
+
     def test_logic(self):
         for url, slot in _SLOTS:
             request = Request(url)
@@ -242,10 +252,12 @@ class TestSchedulerWithDownloaderAwareOnDisk(BaseSchedulerOnDiskTester, unittest
         self.assertEqual(len(slots), len(_SLOTS))
 
         for request in requests:
-            self.mock_crawler.signals.send_catch_log(signal=response_downloaded,
-                                                     request=request,
-                                                     response=None,
-                                                     spider=self.spider)
+            self.mock_crawler.signals.send_catch_log(
+                    signal=response_downloaded,
+                    request=request,
+                    response=None,
+                    spider=self.spider
+                    )
 
         unique_slots = len(set(s for _, s in _SLOTS))
         for i in range(0, len(_SLOTS), unique_slots):
