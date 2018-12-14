@@ -293,7 +293,7 @@ class SlotCollectorSpider(Spider):
     def _force_crawl(self, request):
         """
         we have to do this until problem in https://github.com/scrapy/scrapy/pull/3237
-        is not solved. Otherwise scheduler has no chance to schedule these
+        is not solved. Otherwise priority queue has no chance to schedule these
         requests
         """
         try:
