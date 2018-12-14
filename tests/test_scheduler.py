@@ -330,5 +330,5 @@ class TestIntegrationWithDownloaderAwareOnDisk(TestCase):
             yield self.crawler.crawl(slots)
             spider = self.crawler.spider
 
-            assert len(spider.slots) == len(slots)
+            self.assertEqual(len(spider.slots), len(slots))
             _is_slots_unique(slots, spider.slots)
