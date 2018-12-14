@@ -3,6 +3,7 @@ import tempfile
 import unittest
 
 from twisted.internet import defer
+from twisted.trial.unittest import TestCase
 
 from scrapy.crawler import Crawler
 from scrapy.core.scheduler import Scheduler
@@ -302,7 +303,7 @@ class SlotCollectorSpider(Spider):
             yield request
 
 
-class TestIntegrationWithDownloaderAwareOnDisk(unittest.TestCase):
+class TestIntegrationWithDownloaderAwareOnDisk(TestCase):
     def setUp(self):
         self.crawler = get_crawler(
                     SlotCollectorSpider,
