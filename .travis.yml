@@ -10,7 +10,9 @@ matrix:
     - python: 2.7
       env: TOXENV=py27
     - python: 2.7
-      env: TOXENV=jessie
+      env:
+          - TOXENV=jessie
+          - BOTO_CONFIG=/dev/null
     - python: 2.7
       env: TOXENV=pypy
     - python: 2.7
