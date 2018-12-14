@@ -282,7 +282,8 @@ class SlotCollectorSpider(Spider):
         for url, slot in self.start_slots:
             request = Request(url)
             _scheduler_slot_write(request, slot)
-            yield from self._force_crawl(request)
+            for d in self._force_crawl(request):
+                yield d
 
     def parse(self, response):
         slots = getattr(self, 'slots', list())
