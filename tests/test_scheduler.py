@@ -303,6 +303,17 @@ class SlotCollectorSpider(Spider):
 
 
 class TestIntegrationWithDownloaderAwareOnDisk(unittest.TestCase):
+    def setUp(self):
+        self.crawler = get_crawler(
+                    SlotCollectorSpider,
+                    {'SCHEDULER_PRIORITY_QUEUE': 'scrapy.pqueues.DownloaderAwarePriorityQueue',
+                     'DUPEFILTER_CLASS': 'scrapy.dupefilters.BaseDupeFilter'}
+                    )
+
+    @defer.inlineCallbacks
+    def tearDown(self):
+        yield self.crawler.stop()
+
     @defer.inlineCallbacks
     def test_integration_downloader_aware_priority_queue(self):
         with MockServer() as mockserver:
@@ -316,14 +327,8 @@ class TestIntegrationWithDownloaderAwareOnDisk(unittest.TestCase):
                      (url, 'c'),
                      (url, 'c')]
 
-            crawler = get_crawler(
-                    SlotCollectorSpider,
-                    {'SCHEDULER_PRIORITY_QUEUE': 'scrapy.pqueues.DownloaderAwarePriorityQueue',
-                     'DUPEFILTER_CLASS': 'scrapy.dupefilters.BaseDupeFilter'}
-                    )
-
-            yield crawler.crawl(slots)
-            spider = crawler.spider
+            yield self.crawler.crawl(slots)
+            spider = self.crawler.spider
 
             assert len(spider.slots) == len(slots)
             _is_slots_unique(slots, spider.slots)
