@@ -2,12 +2,16 @@ import shutil
 import tempfile
 import unittest
 
+from twisted.internet import defer
+
 from scrapy.crawler import Crawler
 from scrapy.core.scheduler import Scheduler
 from scrapy.http import Request
 from scrapy.pqueues import _scheduler_slot_read, _scheduler_slot_write
 from scrapy.signals import request_reached_downloader, response_downloaded
 from scrapy.spiders import Spider
+from scrapy.utils.test import get_crawler
+from tests.mockserver import MockServer
 
 
 class MockCrawler(Crawler):
@@ -223,6 +227,13 @@ class TestSchedulerWithDownloaderAwareInMemory(BaseSchedulerInMemoryTester,
             self.assertEqual(len(part), len(set(part)))
 
 
+def _is_slots_unique(base_slots, result_slots):
+    unique_slots = len(set(s for _, s in base_slots))
+    for i in range(0, len(result_slots), unique_slots):
+        part = result_slots[i:i + unique_slots]
+        assert len(part) == len(set(part))
+
+
 class TestSchedulerWithDownloaderAwareOnDisk(BaseSchedulerOnDiskTester,
                                              unittest.TestCase):
     priority_queue_cls = 'scrapy.pqueues.DownloaderAwarePriorityQueue'
@@ -259,7 +270,58 @@ class TestSchedulerWithDownloaderAwareOnDisk(BaseSchedulerOnDiskTester,
                     spider=self.spider
                     )
 
-        unique_slots = len(set(s for _, s in _SLOTS))
-        for i in range(0, len(_SLOTS), unique_slots):
-            part = slots[i:i + unique_slots]
-            self.assertEqual(len(part), len(set(part)))
+        _is_slots_unique(_SLOTS, slots)
+
+
+class SlotCollectorSpider(Spider):
+
+    def __init__(self, start_slots):
+        self.start_slots = start_slots
+
+    def start_requests(self):
+        for url, slot in self.start_slots:
+            request = Request(url)
+            _scheduler_slot_write(request, slot)
+            yield from self._force_crawl(request)
+
+    def parse(self, response):
+        slots = getattr(self, 'slots', list())
+        slots.append(_scheduler_slot_read(response.request))
+        setattr(self, 'slots', slots)
+
+    def _force_crawl(self, request):
+        """
+        we have to do this until problem in https://github.com/scrapy/scrapy/pull/3237
+        is not solved. Otherwise scheduler has no chance to schedule these
+        requests
+        """
+        try:
+            self.crawler.engine.crawl(request, self)
+        except AssertionError:
+            yield request
+
+
+@defer.inlineCallbacks
+def test_integration_downloader_aware_priority_queue():
+    with MockServer() as mockserver:
+
+        url = mockserver.url("/status?n=200", is_secure=False)
+
+        slots = [(url, 'a'),
+                 (url, 'a'),
+                 (url, 'b'),
+                 (url, 'b'),
+                 (url, 'c'),
+                 (url, 'c')]
+
+        crawler = get_crawler(
+                SlotCollectorSpider,
+                {'SCHEDULER_PRIORITY_QUEUE': 'scrapy.pqueues.DownloaderAwarePriorityQueue',
+                 'DUPEFILTER_CLASS': 'scrapy.dupefilters.BaseDupeFilter'}
+                )
+
+        yield crawler.crawl(slots)
+        spider = crawler.spider
+
+        assert len(spider.slots) == len(slots)
+        _is_slots_unique(slots, spider.slots)
