@@ -302,27 +302,28 @@ class SlotCollectorSpider(Spider):
             yield request
 
 
-@defer.inlineCallbacks
-def test_integration_downloader_aware_priority_queue():
-    with MockServer() as mockserver:
+class TestIntegrationWithDownloaderAwareOnDisk(unittest.TestCase):
+    @defer.inlineCallbacks
+    def test_integration_downloader_aware_priority_queue(self):
+        with MockServer() as mockserver:
 
-        url = mockserver.url("/status?n=200", is_secure=False)
+            url = mockserver.url("/status?n=200", is_secure=False)
 
-        slots = [(url, 'a'),
-                 (url, 'a'),
-                 (url, 'b'),
-                 (url, 'b'),
-                 (url, 'c'),
-                 (url, 'c')]
+            slots = [(url, 'a'),
+                     (url, 'a'),
+                     (url, 'b'),
+                     (url, 'b'),
+                     (url, 'c'),
+                     (url, 'c')]
 
-        crawler = get_crawler(
-                SlotCollectorSpider,
-                {'SCHEDULER_PRIORITY_QUEUE': 'scrapy.pqueues.DownloaderAwarePriorityQueue',
-                 'DUPEFILTER_CLASS': 'scrapy.dupefilters.BaseDupeFilter'}
-                )
+            crawler = get_crawler(
+                    SlotCollectorSpider,
+                    {'SCHEDULER_PRIORITY_QUEUE': 'scrapy.pqueues.DownloaderAwarePriorityQueue',
+                     'DUPEFILTER_CLASS': 'scrapy.dupefilters.BaseDupeFilter'}
+                    )
 
-        yield crawler.crawl(slots)
-        spider = crawler.spider
+            yield crawler.crawl(slots)
+            spider = crawler.spider
 
-        assert len(spider.slots) == len(slots)
-        _is_slots_unique(slots, spider.slots)
+            assert len(spider.slots) == len(slots)
+            _is_slots_unique(slots, spider.slots)
