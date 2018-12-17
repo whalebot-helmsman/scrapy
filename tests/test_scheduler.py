@@ -274,38 +274,16 @@ class TestSchedulerWithDownloaderAwareOnDisk(BaseSchedulerOnDiskTester,
         _is_slots_unique(_SLOTS, slots)
 
 
-class SlotCollectorSpider(Spider):
+class StartUrlsSpider(Spider):
 
-    def __init__(self, start_slots):
-        self.start_slots = start_slots
-        self.slots = list()
-
-    def start_requests(self):
-        for url, slot in self.start_slots:
-            request = Request(url)
-            _scheduler_slot_write(request, slot)
-            for d in self._force_crawl(request):
-                yield d
-
-    def parse(self, response):
-        self.slots.append(_scheduler_slot_read(response.request))
-
-    def _force_crawl(self, request):
-        """
-        we have to do this until problem in https://github.com/scrapy/scrapy/pull/3237
-        is not solved. Otherwise priority queue has no chance to schedule these
-        requests
-        """
-        try:
-            self.crawler.engine.crawl(request, self)
-        except AssertionError:
-            yield request
+    def __init__(self, start_urls):
+        self.start_urls = start_urls
 
 
 class TestIntegrationWithDownloaderAwareOnDisk(TestCase):
     def setUp(self):
         self.crawler = get_crawler(
-                    SlotCollectorSpider,
+                    StartUrlsSpider,
                     {'SCHEDULER_PRIORITY_QUEUE': 'scrapy.pqueues.DownloaderAwarePriorityQueue',
                      'DUPEFILTER_CLASS': 'scrapy.dupefilters.BaseDupeFilter'}
                     )
@@ -319,16 +297,7 @@ class TestIntegrationWithDownloaderAwareOnDisk(TestCase):
         with MockServer() as mockserver:
 
             url = mockserver.url("/status?n=200", is_secure=False)
-
-            slots = [(url, 'a'),
-                     (url, 'a'),
-                     (url, 'b'),
-                     (url, 'b'),
-                     (url, 'c'),
-                     (url, 'c')]
-
+            slots = [url] * 6
             yield self.crawler.crawl(slots)
-            spider = self.crawler.spider
-
-            self.assertEqual(len(spider.slots), len(slots))
-            _is_slots_unique(slots, spider.slots)
+            self.assertEqual(self.crawler.stats.get_value('downloader/response_count'),
+                             len(slots))
