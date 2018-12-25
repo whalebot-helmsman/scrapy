@@ -1147,7 +1147,7 @@ Default: ``'queuelib.PriorityQueue'``
 Type of priority queue used by scheduler. Another available type is
 ``scrapy.pqueues.DownloaderAwarePriorityQueue``.
 ``scrapy.pqueues.DownloaderAwarePriorityQueue`` is works better than
-``'queuelib.PriorityQueue'`` when you crawl several hosts simultaneously.
+``'queuelib.PriorityQueue'`` when you crawl many different domains in parallel.
 But ``scrapy.pqueues.DownloaderAwarePriorityQueue``
 does not work together with :setting:`CONCURRENT_REQUESTS_PER_IP`.
 
