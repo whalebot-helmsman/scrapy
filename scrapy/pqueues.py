@@ -46,7 +46,6 @@ def _scheduler_slot(request):
         url = request.get('url', None)
         slot = urlparse(url).hostname or ''
     elif isinstance(request, Request):
-        url = request.url
         slot = urlparse_cached(request).hostname or ''
 
     meta[SCHEDULER_SLOT_META_KEY] = slot
@@ -78,18 +77,11 @@ class PriorityAsTupleQueue(PriorityQueue):
     json serializable structures
     """
     def __init__(self, qfactory, startprios=()):
-
+        startprios = [PrioritySlot(priority=p[0], slot=p[1])
+                      for p in startprios]
         super(PriorityAsTupleQueue, self).__init__(
-                qfactory,
-                [PrioritySlot(priority=p[0], slot=p[1]) for p in startprios]
-                )
-
-    def close(self):
-        startprios = super(PriorityAsTupleQueue, self).close()
-        return [(s.priority, s.slot) for s in startprios]
-
-    def is_empty(self):
-        return not self.queues or len(self) == 0
+            qfactory=qfactory,
+            startprios=startprios)
 
 
 class SlotBasedPriorityQueue(object):
@@ -113,21 +105,17 @@ class SlotBasedPriorityQueue(object):
     def pop_slot(self, slot):
         queue = self.pqueues[slot]
         request = queue.pop()
-        is_empty = queue.is_empty()
-        if is_empty:
+        if len(queue) == 0:
             del self.pqueues[slot]
-
-        return request, is_empty
+        return request
 
     def push_slot(self, request, priority):
         slot = _scheduler_slot(request)
-        is_new = False
         if slot not in self.pqueues:
             self.pqueues[slot] = PriorityAsTupleQueue(self.qfactory)
         queue = self.pqueues[slot]
-        is_new = queue.is_empty()
         queue.push(request, PrioritySlot(priority=priority, slot=slot))
-        return slot, is_new
+        return slot
 
     def close(self):
         startprios = dict()
@@ -182,12 +170,12 @@ class DownloaderAwarePriorityQueue(SlotBasedPriorityQueue):
             return
 
         slot = min(slots)[1]
-        request, _ = self.pop_slot(slot)
+        request = self.pop_slot(slot)
         self.mark(request)
         return request
 
     def push(self, request, priority):
-        slot, _ = self.push_slot(request, priority)
+        slot = self.push_slot(request, priority)
         if slot not in self._slots:
             self._slots[slot] = 0
 
