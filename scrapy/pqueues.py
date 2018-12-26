@@ -48,8 +48,8 @@ def _scheduler_slot(request):
     elif isinstance(request, Request):
         slot = urlparse_cached(request).hostname or ''
 
+    # FIXME: meta is not modified when request is a dict and no meta is stored?
     meta[SCHEDULER_SLOT_META_KEY] = slot
-
     return slot
 
 
@@ -86,7 +86,7 @@ class PriorityAsTupleQueue(PriorityQueue):
 
 class SlotBasedPriorityQueue(object):
 
-    def __init__(self, qfactory, startprios={}):
+    def __init__(self, qfactory, startprios=None):
         self.pqueues = dict()     # slot -> priority queue
         self.qfactory = qfactory  # factory for creating new internal queues
 
@@ -118,10 +118,8 @@ class SlotBasedPriorityQueue(object):
         return slot
 
     def close(self):
-        startprios = dict()
-        for slot, queue in self.pqueues.items():
-            prios = queue.close()
-            startprios[slot] = prios
+        startprios = {slot: queue.close()
+                      for slot, queue in self.pqueues.items()}
         self.pqueues.clear()
         return startprios
 
@@ -134,10 +132,10 @@ class DownloaderAwarePriorityQueue(SlotBasedPriorityQueue):
     _DOWNLOADER_AWARE_PQ_ID = 'DOWNLOADER_AWARE_PQ_ID'
 
     @classmethod
-    def from_crawler(cls, crawler, qfactory, startprios={}):
+    def from_crawler(cls, crawler, qfactory, startprios=None):
         return cls(crawler, qfactory, startprios)
 
-    def __init__(self, crawler, qfactory, startprios={}):
+    def __init__(self, crawler, qfactory, startprios=None):
         ip_concurrency_key = 'CONCURRENT_REQUESTS_PER_IP'
         ip_concurrency = crawler.settings.getint(ip_concurrency_key, 0)
 
@@ -164,7 +162,9 @@ class DownloaderAwarePriorityQueue(SlotBasedPriorityQueue):
         return request.meta.get(self._DOWNLOADER_AWARE_PQ_ID, None) == id(self)
 
     def pop(self):
-        slots = [(d, s) for s, d in self._slots.items() if s in self.pqueues]
+        slots = [(active_downloads, slot)
+                 for slot, active_downloads in self._slots.items()
+                 if slot in self.pqueues]
 
         if not slots:
             return
