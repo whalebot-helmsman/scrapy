@@ -1,6 +1,5 @@
 import hashlib
 import logging
-from six import text_type
 from collections import namedtuple
 from six.moves.urllib.parse import urlparse
 
@@ -55,13 +54,13 @@ def _scheduler_slot(request):
     return slot
 
 
-def _pathable(x):
-    pathable_slot = "".join([c if c.isalnum() or c in '-._' else '_' for c in x])
-
+def _path_safe(text):
+    """ Return a filesystem-safe version of a string ``text`` """
+    pathable_slot = "".join([c if c.isalnum() or c in '-._' else '_'
+                             for c in text])
     # as we replace some letters we can get collision for different slots
     # add we add unique part
-    unique_slot = hashlib.md5(x.encode('utf8')).hexdigest()
-
+    unique_slot = hashlib.md5(text.encode('utf8')).hexdigest()
     return '-'.join([pathable_slot, unique_slot])
 
 
@@ -69,8 +68,7 @@ class PrioritySlot(namedtuple("PrioritySlot", ["priority", "slot"])):
     """ ``(priority, slot)`` tuple which uses a path-safe slot name
     when converting to str """
     def __str__(self):
-        return '_'.join([text_type(self.priority),
-                         _pathable(text_type(self.slot))])
+        return '%s_%s' % (self.priority, _path_safe(str(self.slot)))
 
 
 class PriorityAsTupleQueue(PriorityQueue):
