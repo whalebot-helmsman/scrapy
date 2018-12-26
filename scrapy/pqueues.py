@@ -36,14 +36,7 @@ def _scheduler_slot_write(request, slot):
 
 
 def _scheduler_slot(request):
-
-    if isinstance(request, dict):
-        meta = request.get('meta', dict())
-    elif isinstance(request, Request):
-        meta = request.meta
-    else:
-        raise ValueError('Bad type of request "%s"' % (request.__class__, ))
-
+    meta = _get_from_request(request, "meta", {})
     slot = meta.get(SCHEDULER_SLOT_META_KEY, None)
 
     if slot is not None:
