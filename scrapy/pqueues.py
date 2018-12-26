@@ -1,6 +1,7 @@
 import hashlib
 import logging
 from six import text_type
+from collections import namedtuple
 from six.moves.urllib.parse import urlparse
 
 from queuelib import PriorityQueue
@@ -64,22 +65,9 @@ def _pathable(x):
     return '-'.join([pathable_slot, unique_slot])
 
 
-class PrioritySlot:
-    __slots__ = ('priority', 'slot')
-
-    def __init__(self, priority=0, slot=None):
-        self.priority = priority
-        self.slot = slot
-
-    def __hash__(self):
-        return hash((self.priority, self.slot))
-
-    def __eq__(self, other):
-        return (self.priority, self.slot) == (other.priority, other.slot)
-
-    def __lt__(self, other):
-        return (self.priority, self.slot) < (other.priority, other.slot)
-
+class PrioritySlot(namedtuple("PrioritySlot", ["priority", "slot"])):
+    """ ``(priority, slot)`` tuple which uses a path-safe slot name
+    when converting to str """
     def __str__(self):
         return '_'.join([text_type(self.priority),
                          _pathable(text_type(self.slot))])
