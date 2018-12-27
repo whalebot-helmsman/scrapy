@@ -65,6 +65,8 @@ def _path_safe(text):
 class PrioritySlot(namedtuple("PrioritySlot", ["priority", "slot"])):
     """ ``(priority, slot)`` tuple which uses a path-safe slot name
     when converting to str """
+    __slots__ = ()
+
     def __str__(self):
         return '%s_%s' % (self.priority, _path_safe(str(self.slot)))
 
@@ -75,8 +77,6 @@ class PriorityAsTupleQueue(PriorityQueue):
     We need this modified queue to transform custom structure (from)to
     json serializable structures
     """
-    __slots__ = ()
-
     def __init__(self, qfactory, startprios=()):
         startprios = [PrioritySlot(priority=p[0], slot=p[1])
                       for p in startprios]
