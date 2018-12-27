@@ -75,6 +75,8 @@ class PriorityAsTupleQueue(PriorityQueue):
     We need this modified queue to transform custom structure (from)to
     json serializable structures
     """
+    __slots__ = ()
+
     def __init__(self, qfactory, startprios=()):
         startprios = [PrioritySlot(priority=p[0], slot=p[1])
                       for p in startprios]
