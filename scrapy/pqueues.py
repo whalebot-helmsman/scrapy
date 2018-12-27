@@ -17,12 +17,12 @@ logger = logging.getLogger(__name__)
 SCHEDULER_SLOT_META_KEY = Downloader.DOWNLOAD_SLOT
 
 
-def _get_from_request(request, key, default=None):
+def _get_request_meta(request):
     if isinstance(request, dict):
-        return request.get(key, default)
+        return request.setdefault('meta', {})
 
     if isinstance(request, Request):
-        return getattr(request, key, default)
+        return request.meta
 
     raise ValueError('Bad type of request "%s"' % (request.__class__, ))
 
@@ -35,8 +35,8 @@ def _scheduler_slot_write(request, slot):
     request.meta[SCHEDULER_SLOT_META_KEY] = slot
 
 
-def _scheduler_slot(request):
-    meta = _get_from_request(request, "meta", {})
+def _set_scheduler_slot(request):
+    meta = _get_request_meta(request)
     slot = meta.get(SCHEDULER_SLOT_META_KEY, None)
 
     if slot is not None:
@@ -48,7 +48,6 @@ def _scheduler_slot(request):
     elif isinstance(request, Request):
         slot = urlparse_cached(request).hostname or ''
 
-    # FIXME: meta is not modified when request is a dict and no meta is stored?
     meta[SCHEDULER_SLOT_META_KEY] = slot
     return slot
 
@@ -84,50 +83,50 @@ class PriorityAsTupleQueue(PriorityQueue):
             startprios=startprios)
 
 
-class SlotBasedPriorityQueue(object):
+class SlotPriorityQueues(object):
+    """ Container for multiple priority queues. """
+    def __init__(self, pqfactory, slot_startprios=None):
+        """
+        ``pqfactory`` is a factory for creating new PriorityQueues.
+        It must be a function which accepts a single optional ``startprios``
+        argument, with a list of priorities to create queues for.
 
-    def __init__(self, qfactory, startprios=None):
-        self.pqueues = dict()     # slot -> priority queue
-        self.qfactory = qfactory  # factory for creating new internal queues
-
-        if not startprios:
-            return
-
-        if not isinstance(startprios, dict):
-            raise ValueError("Looks like your priorities file malforfemed. "
-                             "Possible reason: You run scrapy with previous "
-                             "version. Interrupted it. Updated scrapy. And "
-                             "run again.")
-
-        for slot, prios in startprios.items():
-            self.pqueues[slot] = PriorityAsTupleQueue(self.qfactory, prios)
+        ``slot_startprios`` is a ``{slot: startprios}`` dict.
+        """
+        self.pqfactory = pqfactory
+        self.pqueues = {}  # slot -> priority queue
+        for slot, startprios in (slot_startprios or {}).items():
+            self.pqueues[slot] = self.pqfactory(startprios)
 
     def pop_slot(self, slot):
+        """ Pop an object from a priority queue for this slot """
         queue = self.pqueues[slot]
         request = queue.pop()
         if len(queue) == 0:
             del self.pqueues[slot]
         return request
 
-    def push_slot(self, request, priority):
-        slot = _scheduler_slot(request)
+    def push_slot(self, slot, obj, priority):
+        """ Push an object to a priority queue for this slot """
         if slot not in self.pqueues:
-            self.pqueues[slot] = PriorityAsTupleQueue(self.qfactory)
+            self.pqueues[slot] = self.pqfactory()
         queue = self.pqueues[slot]
-        queue.push(request, PrioritySlot(priority=priority, slot=slot))
-        return slot
+        queue.push(obj, priority)
 
     def close(self):
-        startprios = {slot: queue.close()
-                      for slot, queue in self.pqueues.items()}
+        active = {slot: queue.close()
+                  for slot, queue in self.pqueues.items()}
         self.pqueues.clear()
-        return startprios
+        return active
 
     def __len__(self):
         return sum(len(x) for x in self.pqueues.values()) if self.pqueues else 0
 
+    def __contains__(self, slot):
+        return slot in self.pqueues
 
-class DownloaderAwarePriorityQueue(SlotBasedPriorityQueue):
+
+class DownloaderAwarePriorityQueue(object):
 
     _DOWNLOADER_AWARE_PQ_ID = 'DOWNLOADER_AWARE_PQ_ID'
 
@@ -144,16 +143,25 @@ class DownloaderAwarePriorityQueue(SlotBasedPriorityQueue):
                                                               ip_concurrency_key,
                                                               ip_concurrency))
 
-        super(DownloaderAwarePriorityQueue, self).__init__(qfactory,
-                                                           startprios)
-        self._slots = {slot: 0 for slot in self.pqueues}
+        def pqfactory(startprios=()):
+            return PriorityAsTupleQueue(qfactory, startprios)
+
+        if startprios and not isinstance(startprios, dict):
+            raise ValueError("DownloaderAwarePriorityQueue accepts "
+                             "``startprios`` as a dict; %r instance is passed."
+                             " Only a crawl started with the same priority "
+                             "queue class can be resumed." % startprios.__class__)
+        self._slot_pqueues = SlotPriorityQueues(pqfactory,
+                                                slot_startprios=startprios)
+
+        self._active_downloads = {slot: 0 for slot in self._slot_pqueues.pqueues}
         crawler.signals.connect(self.on_response_download,
                                 signal=response_downloaded)
         crawler.signals.connect(self.on_request_reached_downloader,
                                 signal=request_reached_downloader)
 
     def mark(self, request):
-        meta = _get_from_request(request, 'meta', None)
+        meta = _get_request_meta(request)
         if not isinstance(meta, dict):
             raise ValueError('No meta attribute in %s' % (request, ))
         meta[self._DOWNLOADER_AWARE_PQ_ID] = id(self)
@@ -163,40 +171,45 @@ class DownloaderAwarePriorityQueue(SlotBasedPriorityQueue):
 
     def pop(self):
         slots = [(active_downloads, slot)
-                 for slot, active_downloads in self._slots.items()
-                 if slot in self.pqueues]
+                 for slot, active_downloads in self._active_downloads.items()
+                 if slot in self._slot_pqueues]
 
         if not slots:
             return
 
         slot = min(slots)[1]
-        request = self.pop_slot(slot)
+        request = self._slot_pqueues.pop_slot(slot)
         self.mark(request)
         return request
 
     def push(self, request, priority):
-        slot = self.push_slot(request, priority)
-        if slot not in self._slots:
-            self._slots[slot] = 0
+        slot = _set_scheduler_slot(request)
+        priority_slot = PrioritySlot(priority=priority, slot=slot)
+        self._slot_pqueues.push_slot(slot, request, priority_slot)
+        if slot not in self._active_downloads:
+            self._active_downloads[slot] = 0
 
     def on_response_download(self, response, request, spider):
         if not self.check_mark(request):
             return
 
         slot = _scheduler_slot_read(request)
-        if slot not in self._slots or self._slots[slot] <= 0:
+        if slot not in self._active_downloads or self._active_downloads[slot] <= 0:
             raise ValueError('Get response for wrong slot "%s"' % (slot, ))
-        self._slots[slot] = self._slots[slot] - 1
-        if self._slots[slot] == 0 and slot not in self.pqueues:
-            del self._slots[slot]
+        self._active_downloads[slot] = self._active_downloads[slot] - 1
+        if self._active_downloads[slot] == 0 and slot not in self._slot_pqueues:
+            del self._active_downloads[slot]
 
     def on_request_reached_downloader(self, request, spider):
         if not self.check_mark(request):
             return
 
         slot = _scheduler_slot_read(request)
-        self._slots[slot] = self._slots.get(slot, 0) + 1
+        self._active_downloads[slot] = self._active_downloads.get(slot, 0) + 1
 
     def close(self):
-        self._slots.clear()
-        return super(DownloaderAwarePriorityQueue, self).close()
+        self._active_downloads.clear()
+        return self._slot_pqueues.close()
+
+    def __len__(self):
+        return len(self._slot_pqueues)
