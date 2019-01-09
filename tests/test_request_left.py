@@ -1,6 +1,6 @@
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
-from scrapy.signals import response_downloaded
+from scrapy.signals import request_left_downloader
 from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
 from tests.mockserver import MockServer
@@ -11,7 +11,7 @@ class SignalCatcherSpider(Spider):
     def __init__(self, crawler, url, *args, **kwargs):
         super(SignalCatcherSpider, self).__init__(*args, **kwargs)
         crawler.signals.connect(self.on_response_download,
-                                signal=response_downloaded)
+                                signal=request_left_downloader)
         self.catched_times = 0
         self.start_urls = [url]
 
