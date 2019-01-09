@@ -24,7 +24,7 @@ class SignalCatcherSpider(Spider):
         self.catched_times = self.catched_times + 1
 
 
-class TestEmitting(TestCase):
+class TestCatching(TestCase):
 
     def setUp(self):
         self.mockserver = MockServer()
