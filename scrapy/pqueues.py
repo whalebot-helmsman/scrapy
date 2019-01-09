@@ -199,7 +199,7 @@ class DownloaderAwarePriorityQueue(object):
         if slot not in self._active_downloads:
             self._active_downloads[slot] = 0
 
-    def on_response_download(self, response, request, spider):
+    def on_response_download(self, request, spider):
         if not self.check_mark(request):
             return
         self.unmark(request)
