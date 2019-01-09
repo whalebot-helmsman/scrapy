@@ -20,7 +20,7 @@ class SignalCatcherSpider(Spider):
         spider = cls(crawler, *args, **kwargs)
         return spider
 
-    def on_response_download(self, response, request, spider):
+    def on_response_download(self, request, spider):
         self.catched_times = self.catched_times + 1
 
 
