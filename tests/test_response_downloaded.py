@@ -42,8 +42,8 @@ class TestCatching(TestCase):
     @defer.inlineCallbacks
     def test_timeout(self):
         crawler = get_crawler(SignalCatcherSpider,
-                              {'DOWNLOAD_TIMEOUT': 1})
-        yield crawler.crawl(self.mockserver.url("/delay?n=2"))
+                              {'DOWNLOAD_TIMEOUT': 0.1})
+        yield crawler.crawl(self.mockserver.url("/delay?n=0.2"))
         self.assertEqual(crawler.spider.catched_times, 1)
 
     @defer.inlineCallbacks
