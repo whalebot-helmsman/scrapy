@@ -170,6 +170,9 @@ class DownloaderAwarePriorityQueue(object):
     def check_mark(self, request):
         return request.meta.get(self._DOWNLOADER_AWARE_PQ_ID, None) == id(self)
 
+    def unmark(self, request):
+        del request.meta[self._DOWNLOADER_AWARE_PQ_ID]
+
     def pop(self):
         slots = [(active_downloads, slot)
                  for slot, active_downloads in self._active_downloads.items()
@@ -193,6 +196,7 @@ class DownloaderAwarePriorityQueue(object):
     def on_response_download(self, response, request, spider):
         if not self.check_mark(request):
             return
+        self.unmark(request)
 
         slot = _scheduler_slot_read(request)
         if slot not in self._active_downloads or self._active_downloads[slot] <= 0:
