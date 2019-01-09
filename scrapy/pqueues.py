@@ -141,9 +141,8 @@ class DownloaderAwarePriorityQueue(object):
         ip_concurrency = crawler.settings.getint(ip_concurrency_key, 0)
 
         if ip_concurrency > 0:
-            raise ValueError('"%s" does not support %s=%d' % (self.__class__,
-                                                              ip_concurrency_key,
-                                                              ip_concurrency))
+            raise ValueError('"%s" does not support setting %s' % (self.__class__,
+                                                                   ip_concurrency_key))
 
         def pqfactory(startprios=()):
             return PriorityAsTupleQueue(qfactory, startprios)
