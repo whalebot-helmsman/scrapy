@@ -36,6 +36,12 @@ def _scheduler_slot_write(request, slot):
 
 
 def _set_scheduler_slot(request):
+    """
+        >>> _set_scheduler_slot({'url':'http://foo.com'}) == _set_scheduler_slot({'url':'http://bar.com'})
+        False
+        >>> _set_scheduler_slot({'url':'http://foo.com'}) == _set_scheduler_slot({'url':'http://foo.com'})
+        True
+    """
     meta = _get_request_meta(request)
     slot = meta.get(SCHEDULER_SLOT_META_KEY, None)
 
