@@ -5,40 +5,9 @@ from collections import namedtuple
 from queuelib import PriorityQueue
 
 from scrapy.utils.reqser import request_to_dict, request_from_dict
-from scrapy.core.downloader import Downloader
-from scrapy.http import Request
-from scrapy.signals import request_reached_downloader, request_left_downloader
-from scrapy.utils.httpobj import urlparse_cached
 
 
 logger = logging.getLogger(__name__)
-
-
-SCHEDULER_SLOT_META_KEY = Downloader.DOWNLOAD_SLOT
-
-
-def _scheduler_slot_read(request, default=None):
-    return request.meta.get(SCHEDULER_SLOT_META_KEY, default)
-
-
-def _scheduler_slot_write(request, slot):
-    request.meta[SCHEDULER_SLOT_META_KEY] = slot
-
-
-def _set_scheduler_slot(request):
-    """
-    >>> request = Request('http://example.com')
-    >>> _set_scheduler_slot(request)
-    'example.com'
-    >>> _scheduler_slot_read(request)
-    'example.com'
-    """
-    slot = _scheduler_slot_read(request, None)
-    if slot is not None:
-        return slot
-    slot = urlparse_cached(request).hostname or ''
-    _scheduler_slot_write(request, slot)
-    return slot
 
 
 def _path_safe(text):
@@ -111,6 +80,9 @@ class _SlotPriorityQueues(object):
     def __contains__(self, slot):
         return slot in self.pqueues
 
+    def slots(self):
+        return self.pqueues.keys()
+
 
 class ScrapyPriorityQueue(PriorityQueue):
     """
@@ -143,14 +115,17 @@ class DownloaderAwarePriorityQueue(object):
     domains (slots) with the least amount of active downloads are dequeued
     first.
     """
-    _DOWNLOADER_AWARE_PQ_ID = '_DOWNLOADER_AWARE_PQ_ID'
-
     @classmethod
-    def from_crawler(cls, crawler, qfactory, slot_startprios=None, serialize=False):
+    def from_crawler(cls, crawler, qfactory, slot_startprios=None,
+                     serialize=False):
         return cls(crawler, qfactory, slot_startprios, serialize)
 
-    def __init__(self, crawler, qfactory, slot_startprios=None, serialize=False):
-        if crawler.settings.getint('CONCURRENT_REQUESTS_PER_IP') != 0:
+    def __init__(self, crawler, qfactory, slot_startprios=None,
+                 serialize=False):
+        self.downloader = crawler.engine.downloader
+        self.spider = crawler.spider
+
+        if self.downloader.ip_concurrency:
             raise ValueError('"%s" does not support CONCURRENT_REQUESTS_PER_IP'
                              % (self.__class__,))
 
@@ -170,68 +145,35 @@ class DownloaderAwarePriorityQueue(object):
         def pqfactory(startprios=()):
             return ScrapyPriorityQueue(crawler, qfactory, startprios, serialize)
         self._slot_pqueues = _SlotPriorityQueues(pqfactory, slot_startprios)
-
-        self._active_downloads = {slot: 0 for slot in self._slot_pqueues.pqueues}
-        crawler.signals.connect(self.on_response_download,
-                                signal=request_left_downloader)
-        crawler.signals.connect(self.on_request_reached_downloader,
-                                signal=request_reached_downloader)
         self.serialize = serialize
 
-    # There are two PriorityQueues at the same time (memory and disk-based),
-    # and they both listen to Downloader signals. To filter out signals
-    # coming from the other queue, each queue keeps track of its own
-    # requests using mark / unmark / check_mark methods.
-    def mark(self, request):
-        request.meta[self._DOWNLOADER_AWARE_PQ_ID] = id(self)
-
-    def check_mark(self, request):
-        return request.meta.get(self._DOWNLOADER_AWARE_PQ_ID, None) == id(self)
-
-    def unmark(self, request):
-        del request.meta[self._DOWNLOADER_AWARE_PQ_ID]
-
     def pop(self):
-        slots = [(active_downloads, slot)
-                 for slot, active_downloads in self._active_downloads.items()
-                 if slot in self._slot_pqueues]
+        # TODO: take in account max slot concurrency? E.g. if a slot
+        # has concurrency=2 and there are 2 requests for it in downloader,
+        # it could make sense to prefer filling a slot with concurrency=4
+        # which has 3 requests for it in a downloader, even though the latter
+        # is more heavily used.
+        # TODO: shuffle slots, for more even crawling? Do it optionally?
 
+        slots = [(self._active_downloads(slot), slot)
+                 for slot in self._slot_pqueues.slots()]
         if not slots:
             return
-
         slot = min(slots)[1]
-        request = self._slot_pqueues.pop_slot(slot)
-        self.mark(request)
-        return request
+        return self._slot_pqueues.pop_slot(slot)
+
+    def _active_downloads(self, slot):
+        """ Return a number of requests in a Downloader for a given slot """
+        if slot not in self.downloader.slots:
+            return 0
+        return len(self.downloader.slots[slot].active)
 
     def push(self, request, priority):
-        slot = _set_scheduler_slot(request)
+        slot = self.downloader._get_slot_key(request, self.spider)
         priority_slot = _Priority(priority=priority, slot=slot)
         self._slot_pqueues.push_slot(slot, request, priority_slot)
-        if slot not in self._active_downloads:
-            self._active_downloads[slot] = 0
-
-    def on_response_download(self, request, spider):
-        if not self.check_mark(request):
-            return
-        self.unmark(request)
-
-        slot = _scheduler_slot_read(request)
-        if slot not in self._active_downloads or self._active_downloads[slot] <= 0:
-            raise ValueError('Got response for a wrong slot "%s"' % (slot, ))
-        self._active_downloads[slot] -= 1
-        if self._active_downloads[slot] == 0 and slot not in self._slot_pqueues:
-            del self._active_downloads[slot]
-
-    def on_request_reached_downloader(self, request, spider):
-        if not self.check_mark(request):
-            return
-
-        slot = _scheduler_slot_read(request)
-        self._active_downloads[slot] = self._active_downloads.get(slot, 0) + 1
 
     def close(self):
-        self._active_downloads.clear()
         active = self._slot_pqueues.close()
         return {slot: [p.priority for p in startprios]
                 for slot, startprios in active.items()}

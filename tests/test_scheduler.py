@@ -8,7 +8,7 @@ from twisted.trial.unittest import TestCase
 from scrapy.crawler import Crawler
 from scrapy.core.scheduler import Scheduler
 from scrapy.http import Request
-from scrapy.pqueues import _scheduler_slot_read, _scheduler_slot_write
+# from scrapy.pqueues import _scheduler_slot_read, _scheduler_slot_write
 from scrapy.signals import request_reached_downloader, request_left_downloader
 from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
