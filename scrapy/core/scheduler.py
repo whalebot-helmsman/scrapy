@@ -15,7 +15,30 @@ logger = logging.getLogger(__name__)
 
 
 class Scheduler(object):
+    """
+    Scrapy Scheduler. It allows to enqueue requests and then get
+    a next request to download. Scheduler is also handling duplication
+    filtering, via dupefilter.
 
+    Prioritization and queueing is not performed by the Scheduler.
+    User sets ``priority`` field for each Request, and a PriorityQueue
+    (defined by :setting:`SCHEDULER_PRIORITY_QUEUE`) uses these priorities
+    to dequeue requests in a desired order.
+
+    Scheduler uses two PriorityQueue instances, configured to work in-memory
+    and on-disk (optional). When on-disk queue is present, it is used by
+    default, and an in-memory queue is used as a fallback for cases where
+    a disk queue can't handle a request (can't serialize it).
+
+    :setting:`SCHEDULER_MEMORY_QUEUE` and
+    :setting:`SCHEDULER_DISK_QUEUE` allow to specify lower-level queue classes
+    which PriorityQueue instances would be instantiated with, to keep requests
+    on disk and in memory respectively.
+
+    Overall, Scheduler is an object which holds several PriorityQueue instances
+    (in-memory and on-disk) and implements fallback logic for them.
+    Also, it handles dupefilters.
+    """
     def __init__(self, dupefilter, jobdir=None, dqclass=None, mqclass=None,
                  logunser=False, stats=None, pqclass=None, crawler=None):
         self.df = dupefilter
@@ -84,7 +107,7 @@ class Scheduler(object):
         return True
 
     def next_request(self):
-        request = self.mqs.pop()
+        request = self._mqpop()
         if request:
             self.stats.inc_value('scheduler/dequeued/memory', spider=self.spider)
         else:
@@ -124,11 +147,17 @@ class Scheduler(object):
         if self.dqs:
             return self.dqs.pop()
 
+    def _mqpop(self):
+        return self.mqs.pop()
+
     def _newmq(self, priority):
+        """ Factory for creating memory queues. """
         return self.mqclass()
 
     def _newdq(self, priority):
-        return self.dqclass(join(self.dqdir, 'p%s' % (priority, )))
+        """ Factory for creating disk queues. """
+        path = join(self.dqdir, 'p%s' % (priority, ))
+        return self.dqclass(path)
 
     def _mq(self):
         """ Create a new priority queue instance, with in-memory storage """
@@ -150,6 +179,7 @@ class Scheduler(object):
         return q
 
     def _dqdir(self, jobdir):
+        """ Return a folder name to keep disk queue state at """
         if jobdir:
             dqdir = join(jobdir, 'requests.queue')
             if not exists(dqdir):
