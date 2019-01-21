@@ -155,7 +155,7 @@ class DownloaderModelOnSignals(object):
         return _set_scheduler_slot(request)
 
     def on_response_download(self, request, spider):
-        slot = self.get_slot_key(request)
+        slot = _scheduler_slot_read(request)
         if slot not in self._active_downloads or self._active_downloads[slot] <= 0:
             raise ValueError('Got response for a wrong slot "%s"' % (slot, ))
         self._active_downloads[slot] -= 1
