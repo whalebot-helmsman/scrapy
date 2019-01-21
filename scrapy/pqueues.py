@@ -178,19 +178,6 @@ class DownloaderAwarePriorityQueue(object):
                                 signal=request_reached_downloader)
         self.serialize = serialize
 
-    # There are two PriorityQueues at the same time (memory and disk-based),
-    # and they both listen to Downloader signals. To filter out signals
-    # coming from the other queue, each queue keeps track of its own
-    # requests using mark / unmark / check_mark methods.
-    def mark(self, request):
-        request.meta[self._DOWNLOADER_AWARE_PQ_ID] = id(self)
-
-    def check_mark(self, request):
-        return request.meta.get(self._DOWNLOADER_AWARE_PQ_ID, None) == id(self)
-
-    def unmark(self, request):
-        del request.meta[self._DOWNLOADER_AWARE_PQ_ID]
-
     def pop(self):
         slots = [(active_downloads, slot)
                  for slot, active_downloads in self._active_downloads.items()
@@ -201,7 +188,6 @@ class DownloaderAwarePriorityQueue(object):
 
         slot = min(slots)[1]
         request = self._slot_pqueues.pop_slot(slot)
-        self.mark(request)
         return request
 
     def push(self, request, priority):
@@ -212,10 +198,6 @@ class DownloaderAwarePriorityQueue(object):
             self._active_downloads[slot] = 0
 
     def on_response_download(self, request, spider):
-        if not self.check_mark(request):
-            return
-        self.unmark(request)
-
         slot = _scheduler_slot_read(request)
         if slot not in self._active_downloads or self._active_downloads[slot] <= 0:
             raise ValueError('Got response for a wrong slot "%s"' % (slot, ))
@@ -224,9 +206,6 @@ class DownloaderAwarePriorityQueue(object):
             del self._active_downloads[slot]
 
     def on_request_reached_downloader(self, request, spider):
-        if not self.check_mark(request):
-            return
-
         slot = _scheduler_slot_read(request)
         self._active_downloads[slot] = self._active_downloads.get(slot, 0) + 1
 
