@@ -269,8 +269,10 @@ class TestSchedulerWithDownloaderAwareOnDisk(BaseSchedulerOnDiskTester,
                     )
 
         _is_slots_unique(_SLOTS, slots)
-        self.assertEqual(self.scheduler.mqs._active_downloads, {})
-        self.assertEqual(self.scheduler.dqs._active_downloads, {})
+        memory_active_downloads = self.scheduler.mqs._downloader_model._active_downloads
+        disk_active_downloads = self.scheduler.dqs._downloader_model._active_downloads
+        self.assertEqual(sum(c for _, c in memory_active_downloads.items()), 0)
+        self.assertEqual(sum(c for _, c in disk_active_downloads.items()), 0)
 
 
 class StartUrlsSpider(Spider):
