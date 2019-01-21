@@ -122,7 +122,7 @@ def _scheduler_slot_write(request, slot):
     request.meta[SCHEDULER_SLOT_META_KEY] = slot
 
 
-def _set_scheduler_slot(request):
+def _scheduler_slot_set(request):
     """
     >>> request = Request('http://example.com')
     >>> _set_scheduler_slot(request)
@@ -152,7 +152,7 @@ class DownloaderModelOnSignals(object):
                 for slot in possible_slots]
 
     def get_slot_key(self, request):
-        return _set_scheduler_slot(request)
+        return _scheduler_slot_set(request)
 
     def on_response_download(self, request, spider):
         slot = _scheduler_slot_read(request)
