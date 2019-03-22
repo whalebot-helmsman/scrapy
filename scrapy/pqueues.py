@@ -140,7 +140,6 @@ class DownloaderAwarePriorityQueue(object):
     domains (slots) with the least amount of active downloads are dequeued
     first.
     """
-    _DOWNLOADER_AWARE_PQ_ID = '_DOWNLOADER_AWARE_PQ_ID'
 
     @classmethod
     def from_crawler(cls, crawler, qfactory, slot_startprios=None, serialize=False):
