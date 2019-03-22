@@ -20,7 +20,7 @@ MockEngine = collections.namedtuple('MockEngine', ['downloader'])
 MockSlot = collections.namedtuple('MockSlot', ['active'])
 
 
-class MockDownloader:
+class MockDownloader(object):
     def __init__(self):
         self.slots = dict()
 
@@ -57,7 +57,7 @@ class MockCrawler(Crawler):
         self.engine = MockEngine(downloader=MockDownloader())
 
 
-class SchedulerHandler:
+class SchedulerHandler(object):
     priority_queue_cls = None
     jobdir = None
 
@@ -264,12 +264,14 @@ class DownloaderAwareSchedulerTestMixin(object):
         downloader = self.mock_crawler.engine.downloader
         while self.scheduler.has_pending_requests():
             request = self.scheduler.next_request()
+            # pylint: disable=protected-access
             slot = downloader._get_slot_key(request, None)
             dequeued_slots.append(slot)
             downloader.increment(slot)
             requests.append(request)
 
         for request in requests:
+            # pylint: disable=protected-access
             slot = downloader._get_slot_key(request, None)
             downloader.decrement(slot)
 
@@ -278,14 +280,14 @@ class DownloaderAwareSchedulerTestMixin(object):
         self.assertEqual(sum(len(s.active) for s in downloader.slots.values()), 0)
 
 
-class TestSchedulerWithDownloaderAwareInMemory(BaseSchedulerInMemoryTester,
-                                               DownloaderAwareSchedulerTestMixin,
+class TestSchedulerWithDownloaderAwareInMemory(DownloaderAwareSchedulerTestMixin,
+                                               BaseSchedulerInMemoryTester,
                                                unittest.TestCase):
     pass
 
 
-class TestSchedulerWithDownloaderAwareOnDisk(BaseSchedulerOnDiskTester,
-                                             DownloaderAwareSchedulerTestMixin,
+class TestSchedulerWithDownloaderAwareOnDisk(DownloaderAwareSchedulerTestMixin,
+                                             BaseSchedulerOnDiskTester,
                                              unittest.TestCase):
     reopen = True
 
@@ -294,6 +296,7 @@ class StartUrlsSpider(Spider):
 
     def __init__(self, start_urls):
         self.start_urls = start_urls
+        super(StartUrlsSpider, self).__init__(start_urls)
 
     def parse(self, response):
         pass
