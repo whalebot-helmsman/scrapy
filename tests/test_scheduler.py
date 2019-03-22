@@ -220,34 +220,6 @@ class TestMigration(unittest.TestCase):
             self._migration(self.tmpdir)
 
 
-class TestSchedulerWithDownloaderAwareInMemory(BaseSchedulerInMemoryTester,
-                                               unittest.TestCase):
-    priority_queue_cls = 'scrapy.pqueues.DownloaderAwarePriorityQueue'
-
-    def test_logic(self):
-        for url, slot in _URLS_WITH_SLOTS:
-            request = Request(url)
-            request.meta[Downloader.DOWNLOAD_SLOT] = slot
-            self.scheduler.enqueue_request(request)
-
-        downloader = self.mock_crawler.engine.downloader
-        dequeued_slots = list()
-        requests = list()
-        while self.scheduler.has_pending_requests():
-            request = self.scheduler.next_request()
-            slot = downloader._get_slot_key(request, None)
-            dequeued_slots.append(slot)
-            downloader.increment(slot)
-            requests.append(request)
-
-        for request in requests:
-            slot = downloader._get_slot_key(request, None)
-            self.mock_crawler.engine.downloader.decrement(slot)
-
-        self.assertTrue(_is_scheduling_fair(list(s for u, s in _URLS_WITH_SLOTS),
-                                            dequeued_slots))
-
-
 def _is_scheduling_fair(enqueued_slots, dequeued_slots):
     """
     We enqueued same number of requests for every slot.
@@ -273,19 +245,19 @@ def _is_scheduling_fair(enqueued_slots, dequeued_slots):
     return True
 
 
-class TestSchedulerWithDownloaderAwareOnDisk(BaseSchedulerOnDiskTester,
-                                             unittest.TestCase):
+class DownloaderAwareSchedulerTestMixin(object):
     priority_queue_cls = 'scrapy.pqueues.DownloaderAwarePriorityQueue'
+    reopen = False
 
     def test_logic(self):
-
         for url, slot in _URLS_WITH_SLOTS:
             request = Request(url)
             request.meta[Downloader.DOWNLOAD_SLOT] = slot
             self.scheduler.enqueue_request(request)
 
-        self.close_scheduler()
-        self.create_scheduler()
+        if self.reopen:
+            self.close_scheduler()
+            self.create_scheduler()
 
         dequeued_slots = list()
         requests = []
@@ -304,6 +276,18 @@ class TestSchedulerWithDownloaderAwareOnDisk(BaseSchedulerOnDiskTester,
         self.assertTrue(_is_scheduling_fair(list(s for u, s in _URLS_WITH_SLOTS),
                                             dequeued_slots))
         self.assertEqual(sum(len(s.active) for s in downloader.slots.values()), 0)
+
+
+class TestSchedulerWithDownloaderAwareInMemory(BaseSchedulerInMemoryTester,
+                                               DownloaderAwareSchedulerTestMixin,
+                                               unittest.TestCase):
+    pass
+
+
+class TestSchedulerWithDownloaderAwareOnDisk(BaseSchedulerOnDiskTester,
+                                             DownloaderAwareSchedulerTestMixin,
+                                             unittest.TestCase):
+    reopen = True
 
 
 class StartUrlsSpider(Spider):
