@@ -80,9 +80,17 @@ class Spider(object_ref):
                 yield Request(url, dont_filter=True)
 
     def start_requests_with_control(self):
-        sig = self.WaitUntilQueueEmpty
-        gen_ = ((r, sig) if r != sig else (r,) for r in self.start_requests())
-        return iflatten(gen_)
+
+        def gen_():
+            sig = self.WaitUntilQueueEmpty
+
+            for r in self.start_requests():
+                if r != sig:
+                    yield (r, sig)
+                else:
+                    yield (r,)
+
+        return iflatten(gen_())
 
     def make_requests_from_url(self, url):
         """ This method is deprecated. """
