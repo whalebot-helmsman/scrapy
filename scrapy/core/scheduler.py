@@ -78,6 +78,7 @@ class Scheduler:
         self.spider = spider
         self.mqs = self._mq()
         self.dqs = self._dq() if self.dqdir else None
+        logger.debug("Creating disk queue for spider %s", spider)
         return self.df.open()
 
     def close(self, reason):

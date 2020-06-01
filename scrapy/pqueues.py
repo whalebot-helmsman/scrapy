@@ -61,6 +61,7 @@ class ScrapyPriorityQueue:
         self.init_prios(startprios)
 
     def init_prios(self, startprios):
+        logger.debug("Using startprios %s", startprios)
         if not startprios:
             return
 
@@ -70,6 +71,7 @@ class ScrapyPriorityQueue:
         self.curprio = min(startprios)
 
     def qfactory(self, key):
+        logger.debug("Creating downstream queue with key %s", key)
         return create_instance(self.downstream_queue_cls,
                                None,
                                self.crawler,
@@ -80,6 +82,7 @@ class ScrapyPriorityQueue:
 
     def push(self, request):
         priority = self.priority(request)
+        logger.debug("self.queues: %s (%s)", self.queues, id(self.queues))
         if priority not in self.queues:
             self.queues[priority] = self.qfactory(priority)
         q = self.queues[priority]

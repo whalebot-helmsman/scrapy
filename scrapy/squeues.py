@@ -2,13 +2,19 @@
 Scheduler queues
 """
 
+import logging
 import marshal
 import os
 import pickle
+from abc import ABC, abstractmethod
 
 from queuelib import queue
 
+from scrapy.exceptions import NotConfigured
 from scrapy.utils.reqser import request_to_dict, request_from_dict
+
+
+logger = logging.getLogger(__name__)
 
 
 def _with_mkdir(queue_class):
@@ -88,6 +94,46 @@ def _pickle_serialize(obj):
         raise ValueError(str(e)) from e
 
 
+class _RedisQueue(ABC):
+
+    def __init__(self, path):
+        try:
+            import redis  # noqa: F401
+        except ImportError:
+            raise NotConfigured('missing redis library')
+
+        # TODO: Make this configurable.
+        self.client = redis.Redis(host='localhost', port=6379, db=0)
+        self.list_name = "scrapy/" + path
+
+        logger.debug("Using redis queue '%s'", self.list_name)
+
+    def push(self, string):
+        self.client.lpush(self.list_name, string)
+
+    @abstractmethod
+    def pop(self):
+        pass
+
+    def close(self):
+        self.client.close()
+
+    def __len__(self):
+        return self.client.llen(self.list_name)
+
+
+class _FifoRedisQueue(_RedisQueue):
+
+    def pop(self):
+        return self.client.rpop(self.list_name)
+
+
+class _LifoRedisQueue(_RedisQueue):
+
+    def pop(self):
+        return self.client.lpop(self.list_name)
+
+
 PickleFifoDiskQueueNonRequest = _serializable_queue(
     _with_mkdir(queue.FifoDiskQueue),
     _pickle_serialize,
@@ -95,6 +141,16 @@ PickleFifoDiskQueueNonRequest = _serializable_queue(
 )
 PickleLifoDiskQueueNonRequest = _serializable_queue(
     _with_mkdir(queue.LifoDiskQueue),
+    _pickle_serialize,
+    pickle.loads
+)
+PickleFifoRedisQueueNonRequest = _serializable_queue(
+    _with_mkdir(_FifoRedisQueue),
+    _pickle_serialize,
+    pickle.loads
+)
+PickleLifoRedisQueueNonRequest = _serializable_queue(
+    _with_mkdir(_LifoRedisQueue),
     _pickle_serialize,
     pickle.loads
 )
@@ -114,6 +170,12 @@ PickleFifoDiskQueue = _scrapy_serialization_queue(
 )
 PickleLifoDiskQueue = _scrapy_serialization_queue(
     PickleLifoDiskQueueNonRequest
+)
+PickleFifoRedisQueue = _scrapy_serialization_queue(
+    PickleFifoRedisQueueNonRequest
+)
+PickleLifoRedisQueue = _scrapy_serialization_queue(
+    PickleLifoRedisQueueNonRequest
 )
 MarshalFifoDiskQueue = _scrapy_serialization_queue(
     MarshalFifoDiskQueueNonRequest
