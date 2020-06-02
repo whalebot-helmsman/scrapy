@@ -108,38 +108,53 @@ class _RedisQueue(ABC):
             port=self.spider.settings['SCHEDULER_EXTERNAL_QUEUE_REDIS_PORT'],
             db=self.spider.settings['SCHEDULER_EXTERNAL_QUEUE_REDIS_DB'],
         )
-        prefix = self.spider.settings['SCHEDULER_EXTERNAL_QUEUE_REDIS_PREFIX']
-        if not prefix:
-            prefix = "scrapy-{}".format(random.randint(0, 2**32-1))
-        # We need the path because it contains the priority of the queue.
-        self.list_name = "{}-{}".format(prefix, path)
 
-        logger.debug("Using redis queue '%s'", self.list_name)
+        self.path = path
+        if not os.path.exists(path):
+            os.makedirs(path)
+
+        if os.path.exists(self.queue_file_path):
+            with open(self.queue_file_path) as f:
+                self.queue_name = f.read()
+        else:
+            prefix = self.spider.settings['SCHEDULER_EXTERNAL_QUEUE_REDIS_PREFIX']
+            if not prefix:
+                prefix = "scrapy-{}".format(random.randint(0, 2**32-1))
+            self.queue_name = "{}-{}".format(prefix, path)
+
+        logger.debug("Using redis queue '%s'", self.queue_name)
 
     def push(self, string):
-        self.client.lpush(self.list_name, string)
+        self.client.lpush(self.queue_name, string)
 
     @abstractmethod
     def pop(self):
         pass
 
     def close(self):
+        # Serialize the state of the queue.
+        with open(self.queue_file_path, 'w') as f:
+            f.write(self.queue_name)
         self.client.close()
 
     def __len__(self):
-        return self.client.llen(self.list_name)
+        return self.client.llen(self.queue_name)
+
+    @property
+    def queue_file_path(self):
+        return os.path.join(self.path, 'redis.queue')
 
 
 class _FifoRedisQueue(_RedisQueue):
 
     def pop(self):
-        return self.client.rpop(self.list_name)
+        return self.client.rpop(self.queue_name)
 
 
 class _LifoRedisQueue(_RedisQueue):
 
     def pop(self):
-        return self.client.lpop(self.list_name)
+        return self.client.lpop(self.queue_name)
 
 
 PickleFifoDiskQueueNonRequest = _serializable_queue(
