@@ -50,6 +50,8 @@ install:
         source "$HOME/virtualenvs/$PYPY_VERSION/bin/activate"
       fi
   - pip install -U tox twine wheel codecov
+services:
+  - redis
 
 script: tox
 after_success:
