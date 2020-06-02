@@ -6,6 +6,7 @@ import logging
 import marshal
 import os
 import pickle
+import random
 from abc import ABC, abstractmethod
 
 from queuelib import queue
@@ -107,10 +108,11 @@ class _RedisQueue(ABC):
             port=self.spider.settings['SCHEDULER_EXTERNAL_QUEUE_REDIS_PORT'],
             db=self.spider.settings['SCHEDULER_EXTERNAL_QUEUE_REDIS_DB'],
         )
-        self.list_name = (
-            self.spider.settings['SCHEDULER_EXTERNAL_QUEUE_REDIS_PREFIX']
-            + os.path.abspath(path)
-        )
+        prefix = self.spider.settings['SCHEDULER_EXTERNAL_QUEUE_REDIS_PREFIX']
+        if not prefix:
+            prefix = "scrapy-{}".format(random.randint(0, 2**32-1))
+        # We need the path because it contains the priority of the queue.
+        self.list_name = "{}-{}".format(prefix, path)
 
         logger.debug("Using redis queue '%s'", self.list_name)
 
