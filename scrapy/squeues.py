@@ -102,9 +102,15 @@ class _RedisQueue(ABC):
         except ImportError:
             raise NotConfigured('missing redis library')
 
-        # TODO: Make this configurable.
-        self.client = redis.Redis(host='localhost', port=6379, db=0)
-        self.list_name = "scrapy/" + path
+        self.client = redis.Redis(
+            host=self.spider.settings['SCHEDULER_EXTERNAL_QUEUE_REDIS_HOST'],
+            port=self.spider.settings['SCHEDULER_EXTERNAL_QUEUE_REDIS_PORT'],
+            db=self.spider.settings['SCHEDULER_EXTERNAL_QUEUE_REDIS_DB'],
+        )
+        self.list_name = (
+            self.spider.settings['SCHEDULER_EXTERNAL_QUEUE_REDIS_PREFIX']
+            + os.path.abspath(path)
+        )
 
         logger.debug("Using redis queue '%s'", self.list_name)
 
