@@ -6,12 +6,15 @@ from scrapy.squeues import (
     MarshalFifoDiskQueueNonRequest as MarshalFifoDiskQueue,
     MarshalLifoDiskQueueNonRequest as MarshalLifoDiskQueue,
     PickleFifoDiskQueueNonRequest as PickleFifoDiskQueue,
-    PickleLifoDiskQueueNonRequest as PickleLifoDiskQueue
+    PickleLifoDiskQueueNonRequest as PickleLifoDiskQueue,
+    PickleFifoRedisQueueNonRequest as PickleFifoRedisQueue,
+    PickleLifoRedisQueueNonRequest as PickleLifoRedisQueue,
 )
 from scrapy.item import Item, Field
 from scrapy.http import Request
 from scrapy.loader import ItemLoader
 from scrapy.selector import Selector
+from scrapy.settings import Settings
 
 
 class TestItem(Item):
@@ -189,3 +192,25 @@ class PickleLifoDiskQueueTest(t.LifoDiskQueueTest, LifoDiskQueueTestMixin):
         assert isinstance(r2, Request)
         self.assertEqual(r.url, r2.url)
         assert r2.meta['request'] is r2
+
+
+class RedisFifoDiskQueueTest(PickleFifoDiskQueueTest):
+
+    def queue(self):
+        # TODO: Start Redis and configure the connection accordingly.
+        return PickleFifoRedisQueue.from_settings(Settings(), self.qpath)
+
+    def test_chunks(self):
+        # There are no chunks for this queue, so this test is a no-op.
+        pass
+
+
+class RedisLifoDiskQueueTest(PickleLifoDiskQueueTest):
+
+    def queue(self):
+        # TODO: Start Redis and configure the connection accordingly.
+        return PickleLifoRedisQueue.from_settings(Settings(), self.qpath)
+
+    def test_chunks(self):
+        # There are no chunks for this queue, so this test is a no-op.
+        pass
