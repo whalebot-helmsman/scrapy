@@ -51,7 +51,7 @@ install:
       fi
   - pip install -U tox twine wheel codecov
 services:
-  - redis
+  - redis-server
 
 script: tox
 after_success:
