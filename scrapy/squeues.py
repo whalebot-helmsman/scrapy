@@ -2,6 +2,7 @@
 Scheduler queues
 """
 
+import json
 import logging
 import marshal
 import os
@@ -97,64 +98,89 @@ def _pickle_serialize(obj):
 
 class _RedisQueue(ABC):
 
-    def __init__(self, path):
+    def __init__(self, path, settings=None):
         try:
             import redis  # noqa: F401
         except ImportError:
             raise NotConfigured('missing redis library')
 
+        # If called from from_crawler() method, self.spider is set.
+        # If called from from_settings() method, settings is given.
+        if not settings:
+            settings = self.spider.settings
+
         self.client = redis.Redis(
-            host=self.spider.settings['SCHEDULER_EXTERNAL_QUEUE_REDIS_HOST'],
-            port=self.spider.settings['SCHEDULER_EXTERNAL_QUEUE_REDIS_PORT'],
-            db=self.spider.settings['SCHEDULER_EXTERNAL_QUEUE_REDIS_DB'],
+            host=settings['SCHEDULER_EXTERNAL_QUEUE_REDIS_HOST'],
+            port=settings['SCHEDULER_EXTERNAL_QUEUE_REDIS_PORT'],
+            db=settings['SCHEDULER_EXTERNAL_QUEUE_REDIS_DB'],
         )
 
         self.path = path
         if not os.path.exists(path):
             os.makedirs(path)
+        self.info = self._loadinfo(settings['SCHEDULER_EXTERNAL_QUEUE_REDIS_PREFIX'])
 
-        if os.path.exists(self.queue_file_path):
-            with open(self.queue_file_path) as f:
-                self.queue_name = f.read()
-        else:
-            prefix = self.spider.settings['SCHEDULER_EXTERNAL_QUEUE_REDIS_PREFIX']
-            if not prefix:
-                prefix = "scrapy-{}".format(random.randint(0, 2**32-1))
-            self.queue_name = "{}-{}".format(prefix, path)
+        logger.debug("Using redis queue '%s'", self.info['queue_name'])
 
-        logger.debug("Using redis queue '%s'", self.queue_name)
+    @classmethod
+    def from_settings(cls, settings, path):
+        return cls(path, settings)
 
     def push(self, string):
-        self.client.lpush(self.queue_name, string)
+        self.client.lpush(self.info['queue_name'], string)
 
     @abstractmethod
     def pop(self):
         pass
 
     def close(self):
-        # Serialize the state of the queue.
-        with open(self.queue_file_path, 'w') as f:
-            f.write(self.queue_name)
+        self._saveinfo(self.info)
+        if len(self) == 0:
+            self._cleanup()
         self.client.close()
 
-    def __len__(self):
-        return self.client.llen(self.queue_name)
+    def _loadinfo(self, prefix):
+        infopath = self._infopath()
+        if os.path.exists(infopath):
+            with open(infopath) as f:
+                info = json.load(f)
+        else:
+            if not prefix:
+                prefix = "scrapy-{}".format(random.randint(0, 2**32-1))
+            info = {
+                'queue': 'redis',
+                'queue_name': "{}-{}".format(prefix, self.path)
+            }
+        return info
 
-    @property
-    def queue_file_path(self):
-        return os.path.join(self.path, 'redis.queue')
+    def _saveinfo(self, info):
+        # Serialize the state of the queue if it is not empty.
+        with open(self._infopath(), 'w') as f:
+            json.dump(info, f)
+
+    def _infopath(self):
+        return os.path.join(self.path, 'info.json')
+
+    def _cleanup(self):
+        logger.debug("Removing queue info path '%s'" % self._infopath())
+        os.remove(self._infopath())
+        if not os.listdir(self.path):
+            os.rmdir(self.path)
+
+    def __len__(self):
+        return self.client.llen(self.info['queue_name'])
 
 
 class _FifoRedisQueue(_RedisQueue):
 
     def pop(self):
-        return self.client.rpop(self.queue_name)
+        return self.client.rpop(self.info['queue_name'])
 
 
 class _LifoRedisQueue(_RedisQueue):
 
     def pop(self):
-        return self.client.lpop(self.queue_name)
+        return self.client.lpop(self.info['queue_name'])
 
 
 PickleFifoDiskQueueNonRequest = _serializable_queue(
