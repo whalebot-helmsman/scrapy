@@ -54,6 +54,7 @@ def _scrapy_serialization_queue(queue_class):
     class ScrapyRequestQueue(queue_class):
 
         def __init__(self, crawler, key):
+            self.crawler = crawler
             self.spider = crawler.spider
             super(ScrapyRequestQueue, self).__init__(key)
 
@@ -104,10 +105,10 @@ class _RedisQueue(ABC):
         except ImportError:
             raise NotConfigured('missing redis library')
 
-        # If called from from_crawler() method, self.spider is set.
+        # If called from from_crawler() method, self.crawler is set.
         # If called from from_settings() method, settings is given.
         if not settings:
-            settings = self.spider.settings
+            settings = self.crawler.settings
 
         self.client = redis.Redis(
             host=settings['SCHEDULER_EXTERNAL_QUEUE_REDIS_HOST'],
