@@ -213,8 +213,8 @@ class RedisDiskQueueTestMixin:
         super().setUp()
 
     def tearDown(self):
-        self.redis_server.__exit__(None, None, None)
         super().tearDown()
+        self.redis_server.__exit__(None, None, None)
 
 
 class RedisFifoDiskQueueTest(t.FifoTestMixin, RedisDiskQueueTestMixin,

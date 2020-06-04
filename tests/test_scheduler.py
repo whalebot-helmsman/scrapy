@@ -13,7 +13,7 @@ from scrapy.http import Request
 from scrapy.spiders import Spider
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.test import get_crawler
-from tests.mockserver import MockServer
+from tests.mockserver import MockServer, RedisServer
 
 
 MockEngine = collections.namedtuple('MockEngine', ['downloader'])
@@ -43,7 +43,7 @@ class MockDownloader:
 
 
 class MockCrawler(Crawler):
-    def __init__(self, priority_queue_cls, jobdir, disk_queue_cls):
+    def __init__(self, priority_queue_cls, jobdir, disk_queue_cls, settings={}):
         settings = dict(
             SCHEDULER_DEBUG=False,
             SCHEDULER_DISK_QUEUE=disk_queue_cls,
@@ -51,6 +51,7 @@ class MockCrawler(Crawler):
             SCHEDULER_PRIORITY_QUEUE=priority_queue_cls,
             JOBDIR=jobdir,
             DUPEFILTER_CLASS='scrapy.dupefilters.BaseDupeFilter',
+            **settings,
         )
         super(MockCrawler, self).__init__(Spider, settings)
         self.engine = MockEngine(downloader=MockDownloader())
@@ -60,10 +61,11 @@ class SchedulerHandler:
     priority_queue_cls = None
     jobdir = None
     disk_queue_cls = 'scrapy.squeues.PickleLifoDiskQueue'
+    settings = {}
 
     def create_scheduler(self):
         self.mock_crawler = MockCrawler(
-            self.priority_queue_cls, self.jobdir, self.disk_queue_cls
+            self.priority_queue_cls, self.jobdir, self.disk_queue_cls, self.settings
         )
         self.scheduler = Scheduler.from_crawler(self.mock_crawler)
         self.spider = Spider(name='spider')
@@ -177,11 +179,30 @@ class BaseSchedulerOnDiskTester(SchedulerHandler):
                          sorted([x[1] for x in _PRIORITIES], key=lambda x: -x))
 
 
+class BaseSchedulerRedisTester(BaseSchedulerOnDiskTester):
+    disk_queue_cls = 'scrapy.squeues.PickleLifoRedisQueue'
+
+    def setUp(self):
+        self.redis_server = RedisServer()
+        self.redis_server.__enter__()
+        self.settings['SCHEDULER_EXTERNAL_QUEUE_REDIS_HOST'] = self.redis_server.host
+        self.settings['SCHEDULER_EXTERNAL_QUEUE_REDIS_PORT'] = self.redis_server.port
+        super().setUp()
+
+    def tearDown(self):
+        super().tearDown()
+        self.redis_server.__exit__(None, None, None)
+
+
 class TestSchedulerInMemory(BaseSchedulerInMemoryTester, unittest.TestCase):
     priority_queue_cls = 'scrapy.pqueues.ScrapyPriorityQueue'
 
 
 class TestSchedulerOnDisk(BaseSchedulerOnDiskTester, unittest.TestCase):
+    priority_queue_cls = 'scrapy.pqueues.ScrapyPriorityQueue'
+
+
+class TestSchedulerRedis(BaseSchedulerRedisTester, unittest.TestCase):
     priority_queue_cls = 'scrapy.pqueues.ScrapyPriorityQueue'
 
 
