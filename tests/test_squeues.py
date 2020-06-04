@@ -1,5 +1,6 @@
 import pickle
 import sys
+import unittest
 
 from queuelib.tests import test_queue as t
 from scrapy.squeues import (
@@ -15,6 +16,9 @@ from scrapy.http import Request
 from scrapy.loader import ItemLoader
 from scrapy.selector import Selector
 from scrapy.settings import Settings
+
+import logging
+logger = logging.getLogger(__name__)
 
 
 class TestItem(Item):
@@ -194,23 +198,31 @@ class PickleLifoDiskQueueTest(t.LifoDiskQueueTest, LifoDiskQueueTestMixin):
         assert r2.meta['request'] is r2
 
 
-class RedisFifoDiskQueueTest(PickleFifoDiskQueueTest):
+class RedisDiskQueueTestMixin:
+
+    def get_settings(self):
+        settings = Settings()
+        settings['SCHEDULER_EXTERNAL_QUEUE_REDIS_PORT'] = 6379  # 0
+        return settings
+
+    def setUp(self):
+        logger.debug("starting redis")
+        super().setUp()
+
+    def tearDown(self):
+        logger.debug("stopping redis")
+        super().tearDown()
+
+
+class RedisFifoDiskQueueTest(t.FifoTestMixin, RedisDiskQueueTestMixin,
+                             t.PersistentTestMixin, t.QueuelibTestCase):
 
     def queue(self):
-        # TODO: Start Redis and configure the connection accordingly.
-        return PickleFifoRedisQueue.from_settings(Settings(), self.qpath)
-
-    def test_chunks(self):
-        # There are no chunks for this queue, so this test is a no-op.
-        pass
+        return PickleFifoRedisQueue.from_settings(self.get_settings(), self.qpath)
 
 
-class RedisLifoDiskQueueTest(PickleLifoDiskQueueTest):
+class RedisLifoDiskQueueTest(t.LifoTestMixin, RedisDiskQueueTestMixin,
+                             t.PersistentTestMixin, t.QueuelibTestCase):
 
     def queue(self):
-        # TODO: Start Redis and configure the connection accordingly.
-        return PickleLifoRedisQueue.from_settings(Settings(), self.qpath)
-
-    def test_chunks(self):
-        # There are no chunks for this queue, so this test is a no-op.
-        pass
+        return PickleLifoRedisQueue.from_settings(self.get_settings(), self.qpath)
