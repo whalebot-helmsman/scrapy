@@ -16,6 +16,7 @@ from scrapy.http import Request
 from scrapy.loader import ItemLoader
 from scrapy.selector import Selector
 from scrapy.settings import Settings
+from tests.mockserver import RedisServer
 
 import logging
 logger = logging.getLogger(__name__)
@@ -202,15 +203,17 @@ class RedisDiskQueueTestMixin:
 
     def get_settings(self):
         settings = Settings()
-        settings['SCHEDULER_EXTERNAL_QUEUE_REDIS_PORT'] = 6379  # 0
+        settings['SCHEDULER_EXTERNAL_QUEUE_REDIS_HOST'] = self.redis_server.host
+        settings['SCHEDULER_EXTERNAL_QUEUE_REDIS_PORT'] = self.redis_server.port
         return settings
 
     def setUp(self):
-        logger.debug("starting redis")
+        self.redis_server = RedisServer()
+        self.redis_server.__enter__()
         super().setUp()
 
     def tearDown(self):
-        logger.debug("stopping redis")
+        self.redis_server.__exit__(None, None, None)
         super().tearDown()
 
 

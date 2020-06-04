@@ -258,6 +258,20 @@ class MockDNSServer:
         self.proc.communicate()
 
 
+class RedisServer:
+
+    def __enter__(self):
+        self.proc = Popen(['redis-server', '--port', '63790'], stdout=PIPE,
+                          env=get_testenv())
+        self.host = "127.0.0.1"
+        self.port = 63790
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.proc.kill()
+        self.proc.communicate()
+
+
 def ssl_context_factory(keyfile='keys/localhost.key', certfile='keys/localhost.crt', cipher_string=None):
     factory = ssl.DefaultOpenSSLContextFactory(
         os.path.join(os.path.dirname(__file__), keyfile),
