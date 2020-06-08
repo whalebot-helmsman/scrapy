@@ -1,10 +1,10 @@
 language: python
 dist: xenial
-branches:
-  only:
-    - master
-    - /^\d\.\d+$/
-    - /^\d\.\d+\.\d+(rc\d+|\.dev\d+)?$/
+# branches:
+#   only:
+#     - master
+#     - /^\d\.\d+$/
+#     - /^\d\.\d+\.\d+(rc\d+|\.dev\d+)?$/
 matrix:
   include:
     - env: TOXENV=security
