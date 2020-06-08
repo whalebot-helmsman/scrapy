@@ -1,7 +1,6 @@
 import pickle
 import pytest
 import sys
-import unittest
 
 from queuelib.tests import test_queue as t
 from scrapy.squeues import (

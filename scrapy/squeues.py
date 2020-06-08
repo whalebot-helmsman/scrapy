@@ -147,7 +147,7 @@ class _RedisQueue(ABC):
                 info = json.load(f)
         else:
             if not prefix:
-                prefix = "scrapy-{}".format(random.randint(0, 2**32-1))
+                prefix = "scrapy-{}".format(random.randint(0, 2**32 - 1))
             info = {
                 'queue': 'redis',
                 'queue_name': "{}-{}".format(prefix, self.path)
