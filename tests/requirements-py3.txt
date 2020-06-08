@@ -10,6 +10,7 @@ pytest-twisted >= 1.11
 pytest-xdist
 sybil
 testfixtures
+redis
 
 # optional for shell wrapper tests
 bpython
