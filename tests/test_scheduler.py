@@ -3,6 +3,7 @@ import tempfile
 import unittest
 import collections
 
+import pytest
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
 
@@ -202,6 +203,7 @@ class TestSchedulerOnDisk(BaseSchedulerOnDiskTester, unittest.TestCase):
     priority_queue_cls = 'scrapy.pqueues.ScrapyPriorityQueue'
 
 
+@pytest.mark.skipif(not RedisServer.is_available(), reason="redis-server not available")
 class TestSchedulerRedis(BaseSchedulerRedisTester, unittest.TestCase):
     priority_queue_cls = 'scrapy.pqueues.ScrapyPriorityQueue'
 

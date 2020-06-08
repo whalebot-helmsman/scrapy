@@ -3,7 +3,7 @@ import json
 import os
 import random
 import sys
-from subprocess import Popen, PIPE
+from subprocess import CalledProcessError, check_call, DEVNULL, Popen, PIPE
 from urllib.parse import urlencode
 
 from OpenSSL import SSL
@@ -260,10 +260,28 @@ class MockDNSServer:
 
 class RedisServer:
 
+    _available = None
+
+    @classmethod
+    def is_available(cls):
+        if cls._available is None:
+            # Run redis-server --version to check if redis-server is installed an
+            # startable.
+            try:
+                check_call(
+                    ['redis-server', '--version'], stdout=DEVNULL, stderr=DEVNULL
+                )
+                cls._available = True
+            except (FileNotFoundError, CalledProcessError):
+                cls._available = False
+
+        return cls._available
+
     def __enter__(self):
-        self.proc = Popen(['redis-server', '--port', '63790'], stdout=PIPE,
-                          env=get_testenv())
-        self.host = "127.0.0.1"
+        self.proc = Popen(
+            ['redis-server', '--port', '63790'], stdout=PIPE, env=get_testenv()
+        )
+        self.host = '127.0.0.1'
         self.port = 63790
         return self
 

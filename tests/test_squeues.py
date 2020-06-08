@@ -1,4 +1,5 @@
 import pickle
+import pytest
 import sys
 import unittest
 
@@ -166,6 +167,7 @@ class MarshalLifoDiskQueueTest(t.LifoDiskQueueTest, LifoDiskQueueTestMixin):
         return MarshalLifoDiskQueue(self.qpath)
 
 
+@pytest.mark.skipif(not RedisServer.is_available(), reason="redis-server not available")
 class PickleLifoDiskQueueTest(t.LifoDiskQueueTest, LifoDiskQueueTestMixin):
 
     def queue(self):
@@ -217,6 +219,7 @@ class RedisDiskQueueTestMixin:
         self.redis_server.__exit__(None, None, None)
 
 
+@pytest.mark.skipif(not RedisServer.is_available(), reason="redis-server not available")
 class RedisFifoDiskQueueTest(t.FifoTestMixin, RedisDiskQueueTestMixin,
                              t.PersistentTestMixin, t.QueuelibTestCase):
 
@@ -224,6 +227,7 @@ class RedisFifoDiskQueueTest(t.FifoTestMixin, RedisDiskQueueTestMixin,
         return PickleFifoRedisQueue.from_settings(self.get_settings(), self.qpath)
 
 
+@pytest.mark.skipif(not RedisServer.is_available(), reason="redis-server not available")
 class RedisLifoDiskQueueTest(t.LifoTestMixin, RedisDiskQueueTestMixin,
                              t.PersistentTestMixin, t.QueuelibTestCase):
 
