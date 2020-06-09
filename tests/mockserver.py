@@ -19,7 +19,7 @@ from twisted.web.util import redirectTo
 
 from scrapy.utils.python import to_bytes, to_unicode
 from scrapy.utils.ssl import SSL_OP_NO_TLSv1_3
-from scrapy.utils.test import get_testenv
+from scrapy.utils.test import get_testenv, get_free_port
 
 
 def getarg(request, name, default=None, type=None):
@@ -278,16 +278,16 @@ class RedisServer:
         return cls._available
 
     def __enter__(self):
+        self._socket = get_free_port()
+        self.host, self.port = self._socket.getsockname()
         self.proc = Popen(
-            ['redis-server', '--port', '63790'], stdout=PIPE, env=get_testenv()
+            ['redis-server', '--port', str(self.port)], stdout=PIPE, env=get_testenv(),
         )
-        self.host = '127.0.0.1'
-        self.port = 63790
-        return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.proc.kill()
         self.proc.communicate()
+        self._socket.close()
 
 
 def ssl_context_factory(keyfile='keys/localhost.key', certfile='keys/localhost.crt', cipher_string=None):

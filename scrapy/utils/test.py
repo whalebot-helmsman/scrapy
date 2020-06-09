@@ -6,6 +6,7 @@ from __future__ import absolute_import
 from posixpath import split
 import asyncio
 import os
+import socket
 
 from importlib import import_module
 from twisted.trial.unittest import SkipTest
@@ -126,3 +127,11 @@ def get_from_asyncio_queue(value):
     getter = q.get()
     q.put_nowait(value)
     return getter
+
+
+def get_free_port():
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # OS-specific mechanism to obtain random port
+    s.bind(('', 0))
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    return s
