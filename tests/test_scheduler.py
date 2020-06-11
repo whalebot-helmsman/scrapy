@@ -203,7 +203,7 @@ class TestSchedulerOnDisk(BaseSchedulerOnDiskTester, unittest.TestCase):
     priority_queue_cls = 'scrapy.pqueues.ScrapyPriorityQueue'
 
 
-@pytest.mark.skipif(not RedisServer.is_available(), reason="redis-server not available")
+@pytest.mark.redis
 class TestSchedulerRedis(BaseSchedulerRedisTester, unittest.TestCase):
     priority_queue_cls = 'scrapy.pqueues.ScrapyPriorityQueue'
 

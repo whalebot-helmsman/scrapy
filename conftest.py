@@ -39,6 +39,12 @@ def pytest_collection_modifyitems(session, config, items):
     except ImportError:
         pass
 
+    if not config.getoption('--has-redis'):
+        skip_redis = pytest.mark.skip(reason='need --has-redis option to run')
+        for item in items:
+            if 'redis' in item.keywords:
+                item.add_marker(skip_redis)
+
 
 @pytest.fixture(scope='class')
 def reactor_pytest(request):
@@ -53,3 +59,14 @@ def reactor_pytest(request):
 def only_asyncio(request, reactor_pytest):
     if request.node.get_closest_marker('only_asyncio') and reactor_pytest != 'asyncio':
         pytest.skip('This test is only run with --reactor=asyncio')
+
+
+def pytest_addoption(parser):
+    parser.addoption(
+        '--has-redis', action='store_true', default=False,
+        help='Run tests that require redis-server to be running'
+    )
+
+
+def pytest_configure(config):
+    config.addinivalue_line('markers', 'redis: mark test as requiring redis-server to run')
