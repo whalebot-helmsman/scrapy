@@ -147,9 +147,9 @@ class _RedisQueue(ABC):
         self.client.close()
 
     def _loadinfo(self, prefix):
-        infopath = self._infopath()
-        if os.path.exists(infopath):
-            with open(infopath) as f:
+        info_path = self._info_path()
+        if os.path.exists(info_path):
+            with open(info_path) as f:
                 info = json.load(f)
         else:
             if not prefix:
@@ -162,15 +162,15 @@ class _RedisQueue(ABC):
 
     def _saveinfo(self, info):
         # Serialize the state of the queue if it is not empty.
-        with open(self._infopath(), 'w') as f:
+        with open(self._info_path(), 'w') as f:
             json.dump(info, f)
 
-    def _infopath(self):
+    def _info_path(self):
         return os.path.join(self.path, 'info.json')
 
     def _cleanup(self):
-        logger.debug("Removing queue info path '%s'" % self._infopath())
-        os.remove(self._infopath())
+        logger.debug("Removing queue info path '%s'" % self._info_path())
+        os.remove(self._info_path())
         if not os.listdir(self.path):
             os.rmdir(self.path)
 
