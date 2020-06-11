@@ -210,12 +210,12 @@ class RedisDiskQueueTestMixin:
 
     def setUp(self):
         self.redis_server = RedisServer()
-        self.redis_server.__enter__()
+        self.redis_server.start()
         super().setUp()
 
     def tearDown(self):
         super().tearDown()
-        self.redis_server.__exit__(None, None, None)
+        self.redis_server.stop()
 
 
 @pytest.mark.skipif(not RedisServer.is_available(), reason="redis-server not available")

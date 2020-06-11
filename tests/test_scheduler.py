@@ -185,14 +185,14 @@ class BaseSchedulerRedisTester(BaseSchedulerOnDiskTester):
 
     def setUp(self):
         self.redis_server = RedisServer()
-        self.redis_server.__enter__()
+        self.redis_server.start()
         self.settings['SCHEDULER_EXTERNAL_QUEUE_REDIS_HOST'] = self.redis_server.host
         self.settings['SCHEDULER_EXTERNAL_QUEUE_REDIS_PORT'] = self.redis_server.port
         super().setUp()
 
     def tearDown(self):
         super().tearDown()
-        self.redis_server.__exit__(None, None, None)
+        self.redis_server.stop()
 
 
 class TestSchedulerInMemory(BaseSchedulerInMemoryTester, unittest.TestCase):

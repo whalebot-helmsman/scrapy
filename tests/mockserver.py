@@ -277,14 +277,14 @@ class RedisServer:
 
         return cls._available
 
-    def __enter__(self):
+    def start(self):
         self._socket = get_free_port()
         self.host, self.port = self._socket.getsockname()
         self.proc = Popen(
             ['redis-server', '--port', str(self.port)], stdout=PIPE, env=get_testenv(),
         )
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def stop(self):
         self.proc.kill()
         self.proc.communicate()
         self._socket.close()
