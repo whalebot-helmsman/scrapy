@@ -99,6 +99,10 @@ def _pickle_serialize(obj):
 
 class _RedisQueue(ABC):
 
+    @classmethod
+    def from_settings(cls, settings, path):
+        return cls(path, settings)
+
     def __init__(self, path, settings=None):
         try:
             import redis  # noqa: F401
@@ -123,10 +127,6 @@ class _RedisQueue(ABC):
 
         logger.debug("Using redis queue '%s'", self.info['queue_name'])
 
-    @classmethod
-    def from_settings(cls, settings, path):
-        return cls(path, settings)
-
     def push(self, string):
         self.client.lpush(self.info['queue_name'], string)
 
@@ -147,7 +147,7 @@ class _RedisQueue(ABC):
                 info = json.load(f)
         else:
             if not prefix:
-                prefix = "scrapy-{}".format(random.randint(0, 2**32 - 1))
+                prefix = "scrapy-{}".format(random.randint(0, 2 ** 32 - 1))
             info = {
                 'queue': 'redis',
                 'queue_name': "{}-{}".format(prefix, self.path)
