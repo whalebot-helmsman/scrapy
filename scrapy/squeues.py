@@ -114,11 +114,17 @@ class _RedisQueue(ABC):
         if not settings:
             settings = self.crawler.settings
 
-        self.client = redis.Redis(
-            host=settings['SCHEDULER_EXTERNAL_QUEUE_REDIS_HOST'],
-            port=settings['SCHEDULER_EXTERNAL_QUEUE_REDIS_PORT'],
-            db=settings['SCHEDULER_EXTERNAL_QUEUE_REDIS_DB'],
-        )
+        host = settings.get('SCHEDULER_EXTERNAL_QUEUE_REDIS_HOST')
+        port = settings.get('SCHEDULER_EXTERNAL_QUEUE_REDIS_PORT')
+        db = settings.get('SCHEDULER_EXTERNAL_QUEUE_REDIS_DB')
+        if host is None or port is None or db is None:
+            raise NotConfigured(
+                "Please configure SCHEDULER_EXTERNAL_QUEUE_REDIS_HOST, "
+                + "SCHEDULER_EXTERNAL_QUEUE_REDIS_PORT, "
+                + "SCHEDULER_EXTERNAL_QUEUE_REDIS_DB in the settings "
+                + "so that Scrapy can connect to Redis."
+            )
+        self.client = redis.Redis(host=host, port=port, db=db)
 
         self.path = path
         if not os.path.exists(path):
