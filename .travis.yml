@@ -5,6 +5,9 @@ dist: xenial
 #     - master
 #     - /^\d\.\d+$/
 #     - /^\d\.\d+\.\d+(rc\d+|\.dev\d+)?$/
+env:
+  global:
+    - SCRAPY_CI_ARGS="--has-redis"
 matrix:
   include:
     - env: TOXENV=security
