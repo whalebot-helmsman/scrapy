@@ -141,7 +141,7 @@ class _RedisQueue(ABC):
         pass
 
     def close(self):
-        self._saveinfo(self.info)
+        self._save_info(self.info)
         if len(self) == 0:
             self._cleanup()
         self.client.close()
@@ -160,7 +160,7 @@ class _RedisQueue(ABC):
             }
         return info
 
-    def _saveinfo(self, info):
+    def _save_info(self, info):
         # Serialize the state of the queue if it is not empty.
         with open(self._info_path(), 'w') as f:
             json.dump(info, f)
