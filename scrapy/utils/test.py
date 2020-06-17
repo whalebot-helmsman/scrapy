@@ -131,7 +131,6 @@ def get_from_asyncio_queue(value):
 
 def get_free_port():
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    # OS-specific mechanism to obtain random port
     s.bind(('', 0))
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     return s
