@@ -111,54 +111,54 @@ class _RedisQueue(ABC):
         host = self.settings.get('SCHEDULER_EXTERNAL_QUEUE_REDIS_HOST')
         port = self.settings.get('SCHEDULER_EXTERNAL_QUEUE_REDIS_PORT')
         db = self.settings.get('SCHEDULER_EXTERNAL_QUEUE_REDIS_DB')
-        if host is None or port is None or db is None:
+        prefix = self.settings.get('SCHEDULER_EXTERNAL_QUEUE_REDIS_PREFIX')
+        if host is None or port is None or db is None or prefix is None:
             raise NotConfigured(
-                "Please configure SCHEDULER_EXTERNAL_QUEUE_REDIS_HOST, "
+                "Please configure "
+                + "SCHEDULER_EXTERNAL_QUEUE_REDIS_HOST, "
                 + "SCHEDULER_EXTERNAL_QUEUE_REDIS_PORT, "
-                + "SCHEDULER_EXTERNAL_QUEUE_REDIS_DB in the settings "
-                + "so that Scrapy can connect to Redis."
+                + "SCHEDULER_EXTERNAL_QUEUE_REDIS_DB, "
+                + "SCHEDULER_EXTERNAL_QUEUE_PREFIX "
+                + "in the project settings so that Scrapy can connect to Redis."
             )
         self.client = redis.Redis(host=host, port=port, db=db)
 
         self.path = path
         if not os.path.exists(path):
             os.makedirs(path)
-        self.info = self._loadinfo(
-            self.settings.get('SCHEDULER_EXTERNAL_QUEUE_REDIS_PREFIX')
-        )
+        self._load_info(prefix)
 
-        logger.debug("Using redis queue '%s'", self.info['queue_name'])
+        logger.debug("Using redis queue '%s'", self.queue_name)
 
     def push(self, string):
-        self.client.lpush(self.info['queue_name'], string)
+        self.client.lpush(self.queue_name, string)
 
     @abstractmethod
     def pop(self):
         pass
 
     def close(self):
-        self._save_info(self.info)
+        self._save_info()
         if len(self) == 0:
             self._cleanup()
         self.client.close()
 
-    def _loadinfo(self, prefix):
+    def _load_info(self, prefix):
         info_path = self._info_path()
         if os.path.exists(info_path):
             with open(info_path) as f:
                 info = json.load(f)
+                self.queue_name = info['queue_name']
         else:
-            if not prefix:
-                prefix = "scrapy-{}".format(random.randint(0, 2 ** 32 - 1))
-            info = {
-                'queue': 'redis',
-                'queue_name': "{}-{}".format(prefix, self.path)
-            }
-        return info
+            self.queue_name = "{}-{}".format(prefix, self.path)
 
-    def _save_info(self, info):
+    def _save_info(self):
         # Serialize the state of the queue if it is not empty.
         with open(self._info_path(), 'w') as f:
+            info = {
+                'queue': 'redis',
+                'queue_name': self.queue_name,
+            }
             json.dump(info, f)
 
     def _info_path(self):
@@ -171,19 +171,19 @@ class _RedisQueue(ABC):
             os.rmdir(self.path)
 
     def __len__(self):
-        return self.client.llen(self.info['queue_name'])
+        return self.client.llen(self.queue_name)
 
 
 class _FifoRedisQueue(_RedisQueue):
 
     def pop(self):
-        return self.client.rpop(self.info['queue_name'])
+        return self.client.rpop(self.queue_name)
 
 
 class _LifoRedisQueue(_RedisQueue):
 
     def pop(self):
-        return self.client.lpop(self.info['queue_name'])
+        return self.client.lpop(self.queue_name)
 
 
 PickleFifoDiskQueueNonRequest = _serializable_queue(
