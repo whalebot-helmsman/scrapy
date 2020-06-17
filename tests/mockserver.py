@@ -261,6 +261,8 @@ class MockDNSServer:
 class RedisServer:
 
     _available = None
+    host = None
+    port = None
 
     @classmethod
     def is_available(cls):
@@ -278,16 +280,22 @@ class RedisServer:
         return cls._available
 
     def start(self):
-        self._socket = get_free_port()
-        self.host, self.port = self._socket.getsockname()
+        if RedisServer.host is None or RedisServer.port is None:
+            socket = get_free_port()
+            RedisServer.host, RedisServer.port = socket.getsockname()
+        else:
+            socket = None
+
         self.proc = Popen(
             ['redis-server', '--port', str(self.port)], stdout=PIPE, env=get_testenv(),
         )
 
+        if socket is not None:
+            socket.close()
+
     def stop(self):
         self.proc.kill()
         self.proc.communicate()
-        self._socket.close()
 
 
 def ssl_context_factory(keyfile='keys/localhost.key', certfile='keys/localhost.crt', cipher_string=None):

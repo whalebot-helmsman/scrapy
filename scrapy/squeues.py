@@ -100,6 +100,7 @@ def _pickle_serialize(obj):
 
 
 class _RedisQueue(ABC):
+    client = None
 
     def __init__(self, path):
         try:
@@ -120,7 +121,11 @@ class _RedisQueue(ABC):
                 "SCHEDULER_EXTERNAL_QUEUE_PREFIX "
                 "in the project settings so that Scrapy can connect to Redis."
             )
-        self.client = redis.Redis(host=host, port=port, db=db)
+
+        if self.client is None:
+            # Note: We set the instance variable here.
+            # All RedisQueue objects share the same client object.
+            _RedisQueue.client = redis.Redis(host=host, port=port, db=db)
 
         self.path = path
         if not os.path.exists(path):
