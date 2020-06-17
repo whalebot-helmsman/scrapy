@@ -223,7 +223,7 @@ class RedisFifoDiskQueueTest(t.FifoTestMixin, RedisDiskQueueTestMixin,
                              t.PersistentTestMixin, t.QueuelibTestCase):
 
     def queue(self):
-        return PickleFifoRedisQueue.from_settings(self.get_settings(), self.qpath)
+        return PickleFifoRedisQueue(self.qpath, self.get_settings())
 
 
 @pytest.mark.redis
@@ -231,4 +231,4 @@ class RedisLifoDiskQueueTest(t.LifoTestMixin, RedisDiskQueueTestMixin,
                              t.PersistentTestMixin, t.QueuelibTestCase):
 
     def queue(self):
-        return PickleLifoRedisQueue.from_settings(self.get_settings(), self.qpath)
+        return PickleLifoRedisQueue(self.qpath, self.get_settings())

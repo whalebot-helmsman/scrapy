@@ -37,6 +37,10 @@ def _serializable_queue(queue_class, serialize, deserialize):
 
     class SerializableQueue(queue_class):
 
+        def __init__(self, path, settings=None, *args, **kwargs):
+            self.settings = settings
+            super(SerializableQueue, self).__init__(path, *args, **kwargs)
+
         def push(self, obj):
             s = serialize(obj)
             super(SerializableQueue, self).push(s)
@@ -54,9 +58,8 @@ def _scrapy_serialization_queue(queue_class):
     class ScrapyRequestQueue(queue_class):
 
         def __init__(self, crawler, key):
-            self.crawler = crawler
             self.spider = crawler.spider
-            super(ScrapyRequestQueue, self).__init__(key)
+            super(ScrapyRequestQueue, self).__init__(key, crawler.settings)
 
         @classmethod
         def from_crawler(cls, crawler, key, *args, **kwargs):
@@ -99,24 +102,15 @@ def _pickle_serialize(obj):
 
 class _RedisQueue(ABC):
 
-    @classmethod
-    def from_settings(cls, settings, path):
-        return cls(path, settings)
-
-    def __init__(self, path, settings=None):
+    def __init__(self, path):
         try:
             import redis  # noqa: F401
         except ImportError:
             raise NotConfigured('missing redis library')
 
-        # If called from from_crawler() method, self.crawler is set.
-        # If called from from_settings() method, settings is given.
-        if not settings:
-            settings = self.crawler.settings
-
-        host = settings.get('SCHEDULER_EXTERNAL_QUEUE_REDIS_HOST')
-        port = settings.get('SCHEDULER_EXTERNAL_QUEUE_REDIS_PORT')
-        db = settings.get('SCHEDULER_EXTERNAL_QUEUE_REDIS_DB')
+        host = self.settings.get('SCHEDULER_EXTERNAL_QUEUE_REDIS_HOST')
+        port = self.settings.get('SCHEDULER_EXTERNAL_QUEUE_REDIS_PORT')
+        db = self.settings.get('SCHEDULER_EXTERNAL_QUEUE_REDIS_DB')
         if host is None or port is None or db is None:
             raise NotConfigured(
                 "Please configure SCHEDULER_EXTERNAL_QUEUE_REDIS_HOST, "
@@ -129,7 +123,9 @@ class _RedisQueue(ABC):
         self.path = path
         if not os.path.exists(path):
             os.makedirs(path)
-        self.info = self._loadinfo(settings['SCHEDULER_EXTERNAL_QUEUE_REDIS_PREFIX'])
+        self.info = self._loadinfo(
+            self.settings.get('SCHEDULER_EXTERNAL_QUEUE_REDIS_PREFIX')
+        )
 
         logger.debug("Using redis queue '%s'", self.info['queue_name'])
 
