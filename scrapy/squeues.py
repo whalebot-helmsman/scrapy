@@ -7,7 +7,6 @@ import logging
 import marshal
 import os
 import pickle
-import random
 from abc import ABC, abstractmethod
 
 from queuelib import queue
