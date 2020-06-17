@@ -208,6 +208,11 @@ class TestSchedulerRedis(BaseSchedulerRedisTester, unittest.TestCase):
     priority_queue_cls = 'scrapy.pqueues.ScrapyPriorityQueue'
 
 
+@pytest.mark.redis
+class TestSchedulerDownloaderAwareRedis(BaseSchedulerRedisTester, unittest.TestCase):
+    priority_queue_cls = 'scrapy.pqueues.DownloaderAwarePriorityQueue'
+
+
 _URLS_WITH_SLOTS = [("http://foo.com/a", 'a'),
                     ("http://foo.com/b", 'a'),
                     ("http://foo.com/c", 'b'),
