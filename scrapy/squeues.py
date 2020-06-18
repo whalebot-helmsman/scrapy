@@ -114,11 +114,11 @@ class _RedisQueue(ABC):
         if host is None or port is None or db is None or prefix is None:
             raise NotConfigured(
                 "Please configure "
-                + "SCHEDULER_EXTERNAL_QUEUE_REDIS_HOST, "
-                + "SCHEDULER_EXTERNAL_QUEUE_REDIS_PORT, "
-                + "SCHEDULER_EXTERNAL_QUEUE_REDIS_DB, "
-                + "SCHEDULER_EXTERNAL_QUEUE_PREFIX "
-                + "in the project settings so that Scrapy can connect to Redis."
+                "SCHEDULER_EXTERNAL_QUEUE_REDIS_HOST, "
+                "SCHEDULER_EXTERNAL_QUEUE_REDIS_PORT, "
+                "SCHEDULER_EXTERNAL_QUEUE_REDIS_DB, "
+                "SCHEDULER_EXTERNAL_QUEUE_PREFIX "
+                "in the project settings so that Scrapy can connect to Redis."
             )
         self.client = redis.Redis(host=host, port=port, db=db)
 
