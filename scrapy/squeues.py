@@ -108,20 +108,10 @@ class _RedisQueue(ABC):
         except ImportError:
             raise NotConfigured('missing redis library')
 
-        host = self.settings.get('SCHEDULER_EXTERNAL_QUEUE_REDIS_HOST')
-        port = self.settings.get('SCHEDULER_EXTERNAL_QUEUE_REDIS_PORT')
-        db = self.settings.get('SCHEDULER_EXTERNAL_QUEUE_REDIS_DB')
-        prefix = self.settings.get('SCHEDULER_EXTERNAL_QUEUE_REDIS_PREFIX')
-        if host is None or port is None or db is None or prefix is None:
-            raise NotConfigured(
-                "Please configure "
-                "SCHEDULER_EXTERNAL_QUEUE_REDIS_HOST, "
-                "SCHEDULER_EXTERNAL_QUEUE_REDIS_PORT, "
-                "SCHEDULER_EXTERNAL_QUEUE_REDIS_DB, "
-                "SCHEDULER_EXTERNAL_QUEUE_PREFIX "
-                "in the project settings so that Scrapy can connect to Redis."
-            )
-
+        host = self._get_required_setting('SCHEDULER_EXTERNAL_QUEUE_REDIS_HOST')
+        port = self._get_required_setting('SCHEDULER_EXTERNAL_QUEUE_REDIS_PORT')
+        db = self._get_required_setting('SCHEDULER_EXTERNAL_QUEUE_REDIS_DB')
+        prefix = self._get_required_setting('SCHEDULER_EXTERNAL_QUEUE_REDIS_PREFIX')
         if self.client is None:
             # Note: We set the instance variable here.
             # All RedisQueue objects share the same client object.
@@ -133,6 +123,13 @@ class _RedisQueue(ABC):
         self._load_info(prefix)
 
         logger.debug("Using redis queue '%s'", self.queue_name)
+
+    def _get_required_setting(self, name):
+        value = self.settings.get(name)
+        if value is None:
+            raise NotConfigured('Please configure {} in the project settings'
+                                ' so that Scrapy can connect to Redis.'.format(name))
+        return value
 
     def push(self, string):
         self.client.lpush(self.queue_name, string)
