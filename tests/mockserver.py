@@ -286,16 +286,22 @@ class RedisServer:
         else:
             socket = None
 
-        self.proc = Popen(
-            ['redis-server', '--port', str(self.port)], stdout=PIPE, env=get_testenv(),
-        )
+        self.proc = Popen(['redis-server', '--port', str(self.port)],
+                          stdout=PIPE, stderr=DEVNULL, env=get_testenv())
+
+        # Wait until redis-server is ready to accept connections.
+        # Otherwise we might run into a race condition and not be able to
+        # connect to it.
+        for line in self.proc.stdout:
+            if b"Ready to accept connections" in line:
+                self.proc.stdout.close()
+                break
 
         if socket is not None:
             socket.close()
 
     def stop(self):
         self.proc.kill()
-        self.proc.communicate()
 
 
 def ssl_context_factory(keyfile='keys/localhost.key', certfile='keys/localhost.crt', cipher_string=None):
