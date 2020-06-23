@@ -2,7 +2,6 @@
 Scheduler queues
 """
 
-import json
 import logging
 import marshal
 import os
@@ -117,11 +116,7 @@ class _RedisQueue(ABC):
             # All RedisQueue objects share the same client object.
             _RedisQueue.client = redis.Redis(host=host, port=port, db=db)
 
-        self.path = path
-        if not os.path.exists(path):
-            os.makedirs(path)
-        self._load_info(prefix)
-
+        self.queue_name = "{}-{}".format(prefix, path)
         logger.debug("Using redis queue '%s'", self.queue_name)
 
     def _get_required_setting(self, name):
@@ -139,37 +134,7 @@ class _RedisQueue(ABC):
         pass
 
     def close(self):
-        self._save_info()
-        if len(self) == 0:
-            self._cleanup()
         self.client.close()
-
-    def _load_info(self, prefix):
-        info_path = self._info_path()
-        if os.path.exists(info_path):
-            with open(info_path) as f:
-                info = json.load(f)
-                self.queue_name = info['queue_name']
-        else:
-            self.queue_name = "{}-{}".format(prefix, self.path)
-
-    def _save_info(self):
-        # Serialize the state of the queue if it is not empty.
-        with open(self._info_path(), 'w') as f:
-            info = {
-                'queue': 'redis',
-                'queue_name': self.queue_name,
-            }
-            json.dump(info, f)
-
-    def _info_path(self):
-        return os.path.join(self.path, 'info.json')
-
-    def _cleanup(self):
-        logger.debug("Removing queue info path '%s'" % self._info_path())
-        os.remove(self._info_path())
-        if not os.listdir(self.path):
-            os.rmdir(self.path)
 
     def __len__(self):
         return self.client.llen(self.queue_name)

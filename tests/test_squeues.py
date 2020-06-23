@@ -1,3 +1,4 @@
+import os
 import pickle
 import pytest
 import sys
@@ -216,6 +217,19 @@ class RedisDiskQueueTestMixin:
     def tearDown(self):
         super().tearDown()
         self.redis_server.stop()
+
+    def test_cleanup(self):
+        """Test queue dir is not created"""
+        q = self.queue()
+        values = [b'0', b'1', b'2', b'3', b'4']
+        assert not os.path.exists(self.qpath)
+        for x in values:
+            q.push(x)
+
+        for x in values:
+            q.pop()
+        q.close()
+        assert not os.path.exists(self.qpath)
 
 
 @pytest.mark.redis
