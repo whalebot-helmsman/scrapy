@@ -1207,7 +1207,55 @@ Default: ``'scrapy.squeues.PickleLifoDiskQueue'``
 
 Type of disk queue that will be used by scheduler. Other available types are
 ``scrapy.squeues.PickleFifoDiskQueue``, ``scrapy.squeues.MarshalFifoDiskQueue``,
-``scrapy.squeues.MarshalLifoDiskQueue``.
+``scrapy.squeues.MarshalLifoDiskQueue``,
+``scrapy.squeues.PickleLifoRedisQueue``,
+``scrapy.squeues.PickleFifoRedisQueue``.
+
+.. setting:: SCHEDULER_EXTERNAL_QUEUE_REDIS_DB
+
+SCHEDULER_EXTERNAL_QUEUE_REDIS_DB
+---------------------------------
+
+Default: ``0``
+
+:ref:`Redis <jobs-redis>` database number.
+
+.. setting:: SCHEDULER_EXTERNAL_REDIS_DB
+
+SCHEDULER_EXTERNAL_QUEUE_REDIS_HOST
+-----------------------------------
+
+Default: ``'localhost'``
+
+:ref:`Redis <jobs-redis>` server hostname.
+
+.. setting:: SCHEDULER_EXTERNAL_REDIS_PORT
+
+SCHEDULER_EXTERNAL_QUEUE_REDIS_PORT
+-----------------------------------
+
+Default: ``6379``
+
+:ref:`Redis <jobs-redis>` server port.
+
+.. setting:: SCHEDULER_EXTERNAL_REDIS_PREFIX
+
+SCHEDULER_EXTERNAL_QUEUE_REDIS_PREFIX
+-------------------------------------
+
+Default: ``'scrapy'``
+
+Prefix of the Redis queue name used by the scheduler.  The full queue name is
+built by joining :setting:`SCHEDULER_EXTERNAL_REDIS_PREFIX` and
+:setting:`JOBDIR` with a hyphen (``-``) as a separator, appending
+``/requests.queue/`` as well as the priority of the queue (e. g. ``0``).
+
+The complete queue name is, for example,
+``scrapy-crawls/somespider-1/requests.queue/0`` where ``scrapy`` is the prefix,
+``crawls/somespider-1/requests.queue/`` the path of the queue folder inside the
+local job directory, and ``0`` the priority of the queue.
+
+See also :ref:`jobs-redis`.
 
 .. setting:: SCHEDULER_MEMORY_QUEUE
 
@@ -1250,7 +1298,7 @@ Scrapy does not process new requests.
 SPIDER_CONTRACTS
 ----------------
 
-Default:: ``{}``
+Default: ``{}``
 
 A dict containing the spider contracts enabled in your project, used for
 testing spiders. For more info see :ref:`topics-contracts`.

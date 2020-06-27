@@ -17,6 +17,8 @@ facilities:
 * an extension that keeps some spider state (key/value pairs) persistent
   between batches
 
+Crawls can be persisted on disk or in Redis.
+
 Job directory
 =============
 
@@ -82,3 +84,32 @@ running :class:`~scrapy.spiders.Spider` class.
 If you wish to log the requests that couldn't be serialized, you can set the
 :setting:`SCHEDULER_DEBUG` setting to ``True`` in the project's settings page.
 It is ``False`` by default.
+
+
+.. _jobs-redis:
+
+Storing requests in Redis
+=========================
+
+If the scheduler should store requests in Redis instead of on disk, the
+:setting:`SCHEDULER_DISK_QUEUE` setting has to be set to
+``scrapy.squeues.PickleLifoDiskQueue`` or
+``scrapy.squeues.PickleFifoDiskQueue``. Note that the :setting:`JOBDIR` is still
+necessary because only requests are stored in Redis (spider state and request
+fingerprints are still stored on disk).
+
+To start a spider that uses Redis for request queues, add
+:setting:`SCHEDULER_DISK_QUEUE` to the project's settings or run it like this::
+
+    scrapy crawl somespider -s JOBDIR=crawls/somespider-1 -s SCHEDULER_DISK_QUEUE=scrapy.squeues.PickleLifoDiskQueue
+
+The queue with priority 0 would be saved under the key
+``scrapy-crawls/somespider-1/requests.queue/0`` in Redis. The prefix ``scrapy``
+can be changed by setting :setting:`SCHEDULER_EXTERNAL_QUEUE_REDIS_PREFIX` to a
+custom value.
+
+As for the on-disk queue it's important to note that the Redis queue must
+not be shared by different spiders, or even different jobs/runs of the same
+spider, as it's meant to be used for storing the state of a *single* job.
+Therefore the :setting:`SCHEDULER_EXTERNAL_QUEUE_REDIS_PREFIX` must be set to a
+unique value if the same Redis database is used by multiple crawls.
