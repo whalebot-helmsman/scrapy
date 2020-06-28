@@ -137,7 +137,14 @@ class _RedisQueue(ABC):
         self.client.close()
 
     def __len__(self):
-        return self.client.llen(self.queue_name)
+        import redis.exceptions
+        # In case there is a connection error, assume the queue is empty.
+        # This allows a clean shutdown of Scrapy if there is a connection
+        # problem.
+        try:
+            return self.client.llen(self.queue_name)
+        except redis.exceptions.ConnectionError:
+            return 0
 
 
 class _FifoRedisQueue(_RedisQueue):

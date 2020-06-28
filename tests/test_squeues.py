@@ -4,6 +4,8 @@ import pytest
 import sys
 
 from queuelib.tests import test_queue as t
+import redis.exceptions
+
 from scrapy.squeues import (
     MarshalFifoDiskQueueNonRequest as MarshalFifoDiskQueue,
     MarshalLifoDiskQueueNonRequest as MarshalLifoDiskQueue,
@@ -12,8 +14,9 @@ from scrapy.squeues import (
     PickleFifoRedisQueueNonRequest as PickleFifoRedisQueue,
     PickleLifoRedisQueueNonRequest as PickleLifoRedisQueue,
 )
-from scrapy.item import Item, Field
+from scrapy.exceptions import NotConfigured
 from scrapy.http import Request
+from scrapy.item import Item, Field
 from scrapy.loader import ItemLoader
 from scrapy.selector import Selector
 from scrapy.settings import Settings
@@ -246,3 +249,16 @@ class RedisLifoDiskQueueTest(t.LifoTestMixin, RedisDiskQueueTestMixin,
 
     def queue(self):
         return PickleLifoRedisQueue(self.qpath, self.get_settings())
+
+
+class RedisQueueErrorTest(t.QueuelibTestCase):
+
+    def test_connection_error_length_0(self):
+        """In case of a connection error, the length of the queue is 0."""
+        settings = Settings()
+        settings['SCHEDULER_EXTERNAL_QUEUE_REDIS_HOST'] = 'hostname.invalid'
+        q = PickleFifoRedisQueue(self.qpath, settings)
+        assert len(q) == 0
+        with pytest.raises(redis.exceptions.ConnectionError):
+            q.client.ping()
+        assert len(q) == 0
