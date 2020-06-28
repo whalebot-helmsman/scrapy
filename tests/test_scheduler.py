@@ -1,7 +1,8 @@
+import collections
+import logging
 import shutil
 import tempfile
 import unittest
-import collections
 
 import pytest
 from twisted.internet import defer
@@ -210,6 +211,38 @@ class TestSchedulerRedis(BaseSchedulerRedisTester, unittest.TestCase):
 
 @pytest.mark.redis
 class TestSchedulerDownloaderAwareRedis(BaseSchedulerRedisTester, unittest.TestCase):
+    priority_queue_cls = 'scrapy.pqueues.DownloaderAwarePriorityQueue'
+
+
+class BaseSchedulerRedisErrorTester(SchedulerHandler):
+    disk_queue_cls = 'scrapy.squeues.PickleLifoRedisQueue'
+
+    def setUp(self):
+        self.jobdir = tempfile.mkdtemp()
+        self.settings['SCHEDULER_EXTERNAL_QUEUE_REDIS_HOST'] = 'hostname.invalid'
+        self.create_scheduler()
+
+    def tearDown(self):
+        self.close_scheduler()
+        shutil.rmtree(self.jobdir)
+        self.jobdir = None
+
+    @pytest.fixture(autouse=True)
+    def inject_fixtures(self, caplog):
+        self._caplog = caplog
+
+    def test_connection_error(self):
+        assert self.scheduler.enqueue_request(Request(list(_URLS)[0])) is False
+        with self._caplog.at_level(logging.ERROR):
+            assert 'Unable to push to disk queue' in self._caplog.records[0].message
+
+
+class TestSchedulerRedisError(BaseSchedulerRedisErrorTester, unittest.TestCase):
+    priority_queue_cls = 'scrapy.pqueues.ScrapyPriorityQueue'
+
+
+class TestSchedulerDownloaderAwareRedisError(BaseSchedulerRedisErrorTester,
+                                             unittest.TestCase):
     priority_queue_cls = 'scrapy.pqueues.DownloaderAwarePriorityQueue'
 
 

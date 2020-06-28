@@ -90,7 +90,14 @@ class Scheduler:
         if not request.dont_filter and self.df.request_seen(request):
             self.df.log(request, self.spider)
             return False
-        dqok = self._dqpush(request)
+
+        try:
+            dqok = self._dqpush(request)
+        except Exception as e:
+            logger.error("Unable to push to disk queue: %(reason)s",
+                         {'reason': e})
+            return False
+
         if dqok:
             self.stats.inc_value('scheduler/enqueued/disk', spider=self.spider)
         else:
