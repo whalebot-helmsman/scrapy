@@ -253,6 +253,17 @@ class RedisLifoDiskQueueTest(t.LifoTestMixin, RedisDiskQueueTestMixin,
 
 class RedisQueueErrorTest(t.QueuelibTestCase):
 
+    def test_missing_setting(self):
+        """NotConfigured exception is raised if one of the required settings
+        for Redis is None."""
+        for setting in ['HOST', 'PORT', 'DB', 'PREFIX']:
+            settings = Settings()
+            key = 'SCHEDULER_EXTERNAL_QUEUE_REDIS_' + setting
+            settings[key] = None
+            with pytest.raises(NotConfigured) as excinfo:
+                PickleFifoRedisQueue(self.qpath, settings)
+            assert key in str(excinfo.value)
+
     def test_connection_error_length_0(self):
         """In case of a connection error, the length of the queue is 0."""
         settings = Settings()
