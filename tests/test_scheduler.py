@@ -214,12 +214,11 @@ class TestSchedulerDownloaderAwareRedis(BaseSchedulerRedisTester, unittest.TestC
     priority_queue_cls = 'scrapy.pqueues.DownloaderAwarePriorityQueue'
 
 
-class BaseSchedulerRedisErrorTester(SchedulerHandler):
+class BaseSchedulerHandlerRedis(SchedulerHandler):
     disk_queue_cls = 'scrapy.squeues.PickleLifoRedisQueue'
 
     def setUp(self):
         self.jobdir = tempfile.mkdtemp()
-        self.settings['SCHEDULER_EXTERNAL_QUEUE_REDIS_HOST'] = 'hostname.invalid'
         self.create_scheduler()
 
     def tearDown(self):
@@ -231,19 +230,61 @@ class BaseSchedulerRedisErrorTester(SchedulerHandler):
     def inject_fixtures(self, caplog):
         self._caplog = caplog
 
+
+class BaseSchedulerRedisConnectionErrorTester(BaseSchedulerHandlerRedis):
+    settings = {'SCHEDULER_EXTERNAL_QUEUE_REDIS_HOST': 'hostname.invalid'}
+
     def test_connection_error(self):
         assert self.scheduler.enqueue_request(Request(list(_URLS)[0])) is False
         with self._caplog.at_level(logging.ERROR):
             assert 'Unable to push to disk queue' in self._caplog.records[0].message
 
 
-class TestSchedulerRedisError(BaseSchedulerRedisErrorTester, unittest.TestCase):
+class TestSchedulerRedisConnectionError(BaseSchedulerRedisConnectionErrorTester,
+                                        unittest.TestCase):
     priority_queue_cls = 'scrapy.pqueues.ScrapyPriorityQueue'
 
 
-class TestSchedulerDownloaderAwareRedisError(BaseSchedulerRedisErrorTester,
+class TestSchedulerDownloaderAwareRedisError(BaseSchedulerRedisConnectionErrorTester,
                                              unittest.TestCase):
     priority_queue_cls = 'scrapy.pqueues.DownloaderAwarePriorityQueue'
+
+
+class BaseSchedulerRedisConstructorExceptionTester(BaseSchedulerHandlerRedis):
+    settings = {'SCHEDULER_EXTERNAL_QUEUE_REDIS_HOST': None}
+    dqs_state = None
+
+    def setUp(self):
+        self.jobdir = tempfile.mkdtemp()
+
+    def test_create_scheduler_with_queue_state(self):
+        # The queue is only created in the constructor when there is state on disk.
+        # Therefore we have to write disk queue state to disk.
+        s = Scheduler(dupefilter=None)
+        dqdir = s._dqdir(self.jobdir)
+        s._write_dqs_state(dqdir, self.dqs_state)
+
+        self.create_scheduler()
+        assert self.scheduler.dqs is None
+
+        with self._caplog.at_level(logging.ERROR):
+            assert "Unable to create priority queue with disk storage" in (
+                self._caplog.records[0].message
+            )
+
+
+class TestSchedulerRedisConstructorException(
+    BaseSchedulerRedisConstructorExceptionTester, unittest.TestCase
+):
+    priority_queue_cls = 'scrapy.pqueues.ScrapyPriorityQueue'
+    dqs_state = [0]
+
+
+class TestSchedulerDownloaderAwareRedisConstructorException(
+    BaseSchedulerRedisConstructorExceptionTester, unittest.TestCase
+):
+    priority_queue_cls = 'scrapy.pqueues.DownloaderAwarePriorityQueue'
+    dqs_state = {'a': [0]}
 
 
 _URLS_WITH_SLOTS = [("http://foo.com/a", 'a'),
