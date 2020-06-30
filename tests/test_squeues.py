@@ -208,8 +208,7 @@ class RedisDiskQueueTestMixin:
 
     def get_settings(self):
         settings = Settings()
-        settings['SCHEDULER_EXTERNAL_QUEUE_REDIS_HOST'] = self.redis_server.host
-        settings['SCHEDULER_EXTERNAL_QUEUE_REDIS_PORT'] = self.redis_server.port
+        settings['SCHEDULER_EXTERNAL_QUEUE_REDIS_URL'] = self.redis_server.url
         return settings
 
     def setUp(self):
@@ -256,7 +255,7 @@ class RedisQueueErrorTest(t.QueuelibTestCase):
     def test_missing_setting(self):
         """NotConfigured exception is raised if one of the required settings
         for Redis is None."""
-        for setting in ['HOST', 'PORT', 'DB', 'PREFIX']:
+        for setting in ['URL', 'PREFIX']:
             settings = Settings()
             key = 'SCHEDULER_EXTERNAL_QUEUE_REDIS_' + setting
             settings[key] = None
@@ -267,7 +266,9 @@ class RedisQueueErrorTest(t.QueuelibTestCase):
     def test_connection_error_length_0(self):
         """In case of a connection error, the length of the queue is 0."""
         settings = Settings()
-        settings['SCHEDULER_EXTERNAL_QUEUE_REDIS_HOST'] = 'hostname.invalid'
+        settings['SCHEDULER_EXTERNAL_QUEUE_REDIS_URL'] = (
+            'redis://hostname.invalid:6379/0'
+        )
         q = PickleFifoRedisQueue(self.qpath, settings)
         assert len(q) == 0
         with pytest.raises(redis.exceptions.ConnectionError):

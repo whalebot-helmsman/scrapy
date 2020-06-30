@@ -107,15 +107,13 @@ class _RedisQueue(ABC):
         except ImportError:
             raise NotConfigured('missing redis library')
 
-        host = self._get_required_setting('SCHEDULER_EXTERNAL_QUEUE_REDIS_HOST')
-        port = self._get_required_setting('SCHEDULER_EXTERNAL_QUEUE_REDIS_PORT')
-        db = self._get_required_setting('SCHEDULER_EXTERNAL_QUEUE_REDIS_DB')
-        prefix = self._get_required_setting('SCHEDULER_EXTERNAL_QUEUE_REDIS_PREFIX')
+        url = self._get_required_setting('SCHEDULER_EXTERNAL_QUEUE_REDIS_URL')
         if self.client is None:
             # Note: We set the instance variable here.
             # All RedisQueue objects share the same client object.
-            _RedisQueue.client = redis.Redis(host=host, port=port, db=db)
+            _RedisQueue.client = redis.Redis.from_url(url)
 
+        prefix = self._get_required_setting('SCHEDULER_EXTERNAL_QUEUE_REDIS_PREFIX')
         self.queue_name = "{}-{}".format(prefix, path)
         logger.debug("Using redis queue '%s'", self.queue_name)
 

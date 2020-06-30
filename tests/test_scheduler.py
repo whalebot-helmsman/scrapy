@@ -187,8 +187,7 @@ class BaseSchedulerRedisTester(BaseSchedulerOnDiskTester):
     def setUp(self):
         self.redis_server = RedisServer()
         self.redis_server.start()
-        self.settings['SCHEDULER_EXTERNAL_QUEUE_REDIS_HOST'] = self.redis_server.host
-        self.settings['SCHEDULER_EXTERNAL_QUEUE_REDIS_PORT'] = self.redis_server.port
+        self.settings['SCHEDULER_EXTERNAL_QUEUE_REDIS_URL'] = self.redis_server.url
         super().setUp()
 
     def tearDown(self):
@@ -232,7 +231,7 @@ class BaseSchedulerHandlerRedis(SchedulerHandler):
 
 
 class BaseSchedulerRedisConnectionErrorTester(BaseSchedulerHandlerRedis):
-    settings = {'SCHEDULER_EXTERNAL_QUEUE_REDIS_HOST': 'hostname.invalid'}
+    settings = {'SCHEDULER_EXTERNAL_QUEUE_REDIS_URL': 'redis://hostname.invalid:6379/0'}
 
     def test_connection_error(self):
         assert self.scheduler.enqueue_request(Request(list(_URLS)[0])) is False
@@ -251,7 +250,7 @@ class TestSchedulerDownloaderAwareRedisError(BaseSchedulerRedisConnectionErrorTe
 
 
 class BaseSchedulerRedisConstructorExceptionTester(BaseSchedulerHandlerRedis):
-    settings = {'SCHEDULER_EXTERNAL_QUEUE_REDIS_HOST': None}
+    settings = {'SCHEDULER_EXTERNAL_QUEUE_REDIS_URL': None}
     dqs_state = None
 
     def setUp(self):

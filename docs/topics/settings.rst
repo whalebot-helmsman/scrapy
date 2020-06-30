@@ -1211,32 +1211,22 @@ Type of disk queue that will be used by scheduler. Other available types are
 ``scrapy.squeues.PickleLifoRedisQueue``,
 ``scrapy.squeues.PickleFifoRedisQueue``.
 
-.. setting:: SCHEDULER_EXTERNAL_QUEUE_REDIS_DB
+.. setting:: SCHEDULER_EXTERNAL_REDIS_URL
 
-SCHEDULER_EXTERNAL_QUEUE_REDIS_DB
----------------------------------
+SCHEDULER_EXTERNAL_QUEUE_REDIS_URL
+----------------------------------
 
-Default: ``0``
+Default: ``'redis://localhost:6379/0'``
 
-:ref:`Redis <jobs-redis>` database number.
+URL with connection details to connect to :ref:`Redis <jobs-redis>`.
 
-.. setting:: SCHEDULER_EXTERNAL_REDIS_DB
+For example:
 
-SCHEDULER_EXTERNAL_QUEUE_REDIS_HOST
------------------------------------
+* ``redis://[[username]:[password]]@localhost:6379/0``
+* ``rediss://[[username]:[password]]@localhost:6379/0``
+* ``unix://[[username]:[password]]@/path/to/socket.sock?db=0``
 
-Default: ``'localhost'``
-
-:ref:`Redis <jobs-redis>` server hostname.
-
-.. setting:: SCHEDULER_EXTERNAL_REDIS_PORT
-
-SCHEDULER_EXTERNAL_QUEUE_REDIS_PORT
------------------------------------
-
-Default: ``6379``
-
-:ref:`Redis <jobs-redis>` server port.
+See also https://redis-py.readthedocs.io/en/stable/#redis.Redis.from_url.
 
 .. setting:: SCHEDULER_EXTERNAL_REDIS_PREFIX
 

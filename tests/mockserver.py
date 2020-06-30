@@ -261,8 +261,9 @@ class MockDNSServer:
 class RedisServer:
 
     _available = None
-    host = None
-    port = None
+    _host = None
+    _port = None
+    url = None
 
     @classmethod
     def is_available(cls):
@@ -280,13 +281,14 @@ class RedisServer:
         return cls._available
 
     def start(self):
-        if RedisServer.host is None or RedisServer.port is None:
+        if RedisServer.url is None:
             socket = get_free_port()
-            RedisServer.host, RedisServer.port = socket.getsockname()
+            RedisServer._host, RedisServer._port = socket.getsockname()
+            RedisServer.url = 'redis://{}:{}/0'.format(self._host, self._port)
         else:
             socket = None
 
-        self.proc = Popen(['redis-server', '--port', str(self.port)],
+        self.proc = Popen(['redis-server', '--port', str(self._port)],
                           stdout=PIPE, stderr=DEVNULL, env=get_testenv())
 
         # Wait until redis-server is ready to accept connections.
