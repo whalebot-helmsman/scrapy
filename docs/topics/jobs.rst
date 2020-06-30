@@ -93,15 +93,15 @@ Storing requests in Redis
 
 If the scheduler should store requests in Redis instead of on disk, the
 :setting:`SCHEDULER_DISK_QUEUE` setting has to be set to
-``scrapy.squeues.PickleLifoDiskQueue`` or
-``scrapy.squeues.PickleFifoDiskQueue``. Note that the :setting:`JOBDIR` is still
+``scrapy.squeues.PickleLifoRedisQueue`` or
+``scrapy.squeues.PickleFifoRedisQueue``. Note that the :setting:`JOBDIR` is still
 necessary because only requests are stored in Redis (spider state and request
 fingerprints are still stored on disk).
 
 To start a spider that uses Redis for request queues, add
 :setting:`SCHEDULER_DISK_QUEUE` to the project's settings or run it like this::
 
-    scrapy crawl somespider -s JOBDIR=crawls/somespider-1 -s SCHEDULER_DISK_QUEUE=scrapy.squeues.PickleLifoDiskQueue
+    scrapy crawl somespider -s JOBDIR=crawls/somespider-1 -s SCHEDULER_DISK_QUEUE=scrapy.squeues.PickleLifoRedisQueue
 
 The queue with priority 0 would be saved under the key
 ``scrapy-crawls/somespider-1/requests.queue/0`` in Redis. The prefix ``scrapy``
