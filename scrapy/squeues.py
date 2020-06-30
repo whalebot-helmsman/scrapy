@@ -120,8 +120,9 @@ class _RedisQueue(ABC):
     def _get_required_setting(self, name):
         value = self.settings.get(name)
         if value is None:
-            raise NotConfigured('Please configure {} in the project settings'
-                                ' so that Scrapy can connect to Redis.'.format(name))
+            raise NotConfigured('"{}" is not set in your project settings. '
+                                'For more information, please refer to the '
+                                'API Reference.'.format(name))
         return value
 
     def push(self, string):
