@@ -120,9 +120,13 @@ class _RedisQueue(ABC):
     def _get_required_setting(self, name):
         value = self.settings.get(name)
         if value is None:
-            raise NotConfigured('"{}" is not set in your project settings. '
-                                'For more information, please refer to the '
-                                'API Reference.'.format(name))
+            raise NotConfigured(
+                'When the SCHEDULER_DISK_QUEUE setting is defined as '
+                '{queue}, the {name} setting must also be defined.'.format(
+                    queue=repr(self.settings['SCHEDULER_DISK_QUEUE']),
+                    name=name,
+                )
+            )
         return value
 
     def push(self, string):
