@@ -99,7 +99,7 @@ def _pickle_serialize(obj):
 
 
 class _RedisQueue(ABC):
-    client = None
+    clients = {}
 
     def __init__(self, path):
         try:
@@ -108,14 +108,15 @@ class _RedisQueue(ABC):
             raise NotConfigured('missing redis library')
 
         url = self._get_required_setting('SCHEDULER_EXTERNAL_QUEUE_REDIS_URL')
-        if self.client is None:
+        if url not in self.clients:
             # Note: We set the instance variable here.
             # All RedisQueue objects share the same client object.
-            _RedisQueue.client = redis.Redis.from_url(url)
+            _RedisQueue.clients[url] = redis.Redis.from_url(url)
+        self.client = _RedisQueue.clients[url]
 
         prefix = self._get_required_setting('SCHEDULER_EXTERNAL_QUEUE_REDIS_PREFIX')
         self.queue_name = "{}-{}".format(prefix, path)
-        logger.debug("Using redis queue '%s'", self.queue_name)
+        logger.debug("Using redis at '%s' with queue '%s'", url, self.queue_name)
 
     def _get_required_setting(self, name):
         value = self.settings.get(name)
