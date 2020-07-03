@@ -6,7 +6,6 @@ from os.path import join, exists
 
 from queuelib import PriorityQueue
 
-from scrapy.exceptions import NotConfigured
 from scrapy.utils.misc import load_object, create_instance
 from scrapy.utils.job import job_dir
 from scrapy.utils.deprecate import ScrapyDeprecationWarning
@@ -166,9 +165,10 @@ class Scheduler:
                                 downstream_queue_cls=self.dqclass,
                                 key=self.dqdir,
                                 startprios=state)
-        except NotConfigured as e:
-            logger.error("Unable to create priority queue with disk storage: "
-                         "%(reason)s", {'reason': e})
+        except Exception as e:
+            reason = str(e).rstrip('.')
+            logger.warning("Unable to create priority queue with disk storage: "
+                           "%s. Falling back to memory queue." % reason)
             q = None
         if q:
             logger.info("Resuming crawl (%(queuesize)d requests scheduled)",
