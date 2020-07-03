@@ -91,13 +91,7 @@ class Scheduler:
             self.df.log(request, self.spider)
             return False
 
-        try:
-            dqok = self._dqpush(request)
-        except Exception as e:
-            logger.error("Unable to push to disk queue: %(reason)s",
-                         {'reason': e})
-            return False
-
+        dqok = self._dqpush(request)
         if dqok:
             self.stats.inc_value('scheduler/enqueued/disk', spider=self.spider)
         else:
@@ -126,7 +120,7 @@ class Scheduler:
             return
         try:
             self.dqs.push(request)
-        except ValueError as e:  # non serializable request
+        except Exception as e:  # non serializable request
             if self.logunser:
                 msg = ("Unable to serialize request: %(request)s - reason:"
                        " %(reason)s - no more unserializable requests will be"
