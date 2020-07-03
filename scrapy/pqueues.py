@@ -1,7 +1,9 @@
 import hashlib
 import logging
 
+from scrapy.http import Request
 from scrapy.utils.misc import create_instance
+from scrapy.utils.request import request_fingerprint
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +60,18 @@ class ScrapyPriorityQueue:
         self.key = key
         self.queues = {}
         self.curprio = None
+        self.selfcheck()
         self.init_prios(startprios)
+
+    def selfcheck(self):
+        priority = 0
+        self.queues[priority] = self.qfactory(priority)
+        req1 = Request('http://hostname.invalid')
+        self.push(req1)
+        req2 = self.pop()
+        if request_fingerprint(req1) != request_fingerprint(req2):
+            raise ValueError("Pushed request %s but popped different request %s!" %
+                             (req1, req2))
 
     def init_prios(self, startprios):
         if not startprios:
@@ -157,10 +170,14 @@ class DownloaderAwarePriorityQueue:
         self.downstream_queue_cls = downstream_queue_cls
         self.key = key
         self.crawler = crawler
-
+        self.selfcheck()
         self.pqueues = {}  # slot -> priority queue
         for slot, startprios in (slot_startprios or {}).items():
             self.pqueues[slot] = self.pqfactory(slot, startprios)
+
+    def selfcheck(self):
+        queue = self.pqfactory('hostname.invalid')
+        queue.close()
 
     def pqfactory(self, slot, startprios=()):
         return ScrapyPriorityQueue(self.crawler,
