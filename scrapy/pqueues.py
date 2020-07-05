@@ -1,5 +1,6 @@
 import hashlib
 import logging
+import random
 
 from scrapy.http import Request
 from scrapy.utils.misc import create_instance
@@ -64,14 +65,17 @@ class ScrapyPriorityQueue:
         self.init_prios(startprios)
 
     def selfcheck(self):
-        priority = 0
+        priority = random.randint(2**31, 2**32)
         self.queues[priority] = self.qfactory(priority)
-        req1 = Request('http://hostname.invalid')
+        self.curprio = priority
+        req1 = Request('http://hostname.invalid', priority=priority)
         self.push(req1)
         req2 = self.pop()
         if request_fingerprint(req1) != request_fingerprint(req2):
-            raise ValueError("Pushed request %s but popped different request %s!" %
-                             (req1, req2))
+            raise ValueError(
+                "Pushed request %s with priority %d but popped different request %s." %
+                 (req1, priority, req2)
+            )
 
     def init_prios(self, startprios):
         if not startprios:
