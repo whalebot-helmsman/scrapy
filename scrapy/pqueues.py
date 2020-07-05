@@ -73,8 +73,8 @@ class ScrapyPriorityQueue:
         req2 = self.pop()
         if request_fingerprint(req1) != request_fingerprint(req2):
             raise ValueError(
-                "Pushed request %s with priority %d but popped different request %s." %
-                 (req1, priority, req2)
+                "Pushed request %s with priority %d but popped different request %s."
+                % (req1, priority, req2)
             )
 
     def init_prios(self, startprios):
