@@ -113,3 +113,15 @@ not be shared by different spiders, or even different jobs/runs of the same
 spider, as it's meant to be used for storing the state of a *single* job.
 Therefore the :setting:`SCHEDULER_EXTERNAL_QUEUE_REDIS_PREFIX` must be set to a
 unique value if the same Redis database is used by multiple crawls.
+
+Cleanup
+-------
+
+If requests are stored in Redis, deleting the ``JOBDIR`` directory is not
+enough.  If the crawl is interrupted or stops before all enqueued requests are
+dequeued, it is likely that there are still request objects in the Redis queue.
+The queue has to be deleted manually from Redis in such a case::
+
+    redis-cli --scan --pattern 'scrapy-crawls/somespider-1/requests.queue/*' | xargs -r redis-cli del
+
+If the queue is not deleted, it could be reused accidentally by another crawl.
