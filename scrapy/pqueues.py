@@ -65,8 +65,16 @@ class ScrapyPriorityQueue:
         self.init_prios(startprios)
 
     def selfcheck(self):
-        priority = random.randint(2**31, 2**32)
-        self.queues[priority] = self.qfactory(priority)
+        # Find an empty/unused queue.
+        while True:
+            # Use random priority to not interfere with existing queues.
+            priority = random.randrange(2**64)
+            q = self.qfactory(priority)
+            if not q:  # Queue is empty
+                break
+            q.close()
+
+        self.queues[priority] = q
         self.curprio = priority
         req1 = Request('http://hostname.invalid', priority=priority)
         self.push(req1)
@@ -75,6 +83,11 @@ class ScrapyPriorityQueue:
             raise ValueError(
                 "Pushed request %s with priority %d but popped different request %s."
                 % (req1, priority, req2)
+            )
+
+        if q:
+            raise ValueError(
+                "Queue with priority %d should be empty after selfcheck!" % priority
             )
 
     def init_prios(self, startprios):
