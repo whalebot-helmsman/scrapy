@@ -116,7 +116,13 @@ class _RedisQueue(ABC):
 
         prefix = self._get_required_setting('SCHEDULER_EXTERNAL_QUEUE_REDIS_PREFIX')
         self.queue_name = "{}-{}".format(prefix, path)
-        logger.debug("Using redis at '%s' with queue '%s'", url, self.queue_name)
+
+        size = len(self)
+        if size > 0:
+            logger.debug("Using redis at '%s' with existing queue '%s' (size: %d)",
+                         url, self.queue_name, size)
+        else:
+            logger.debug("Using redis at '%s' with new queue '%s'", url, self.queue_name)
 
     def _get_required_setting(self, name):
         value = self.settings.get(name)
