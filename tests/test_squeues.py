@@ -2,6 +2,7 @@ import os
 import pickle
 import pytest
 import sys
+import unittest.mock
 
 from queuelib.tests import test_queue as t
 import redis.exceptions
@@ -204,7 +205,7 @@ class PickleLifoDiskQueueTest(t.LifoDiskQueueTest, LifoDiskQueueTestMixin):
         assert r2.meta['request'] is r2
 
 
-class RedisDiskQueueTestMixin:
+class RedisQueueTestMixin:
 
     def get_settings(self):
         settings = Settings()
@@ -235,22 +236,26 @@ class RedisDiskQueueTestMixin:
 
 
 @pytest.mark.redis
-class RedisFifoDiskQueueTest(t.FifoTestMixin, RedisDiskQueueTestMixin,
-                             t.PersistentTestMixin, t.QueuelibTestCase):
+class RedisFifoQueueTest(t.FifoTestMixin, RedisQueueTestMixin,
+                         t.PersistentTestMixin, t.QueuelibTestCase):
 
     def queue(self):
         return PickleFifoRedisQueue(self.qpath, self.get_settings())
 
 
 @pytest.mark.redis
-class RedisLifoDiskQueueTest(t.LifoTestMixin, RedisDiskQueueTestMixin,
-                             t.PersistentTestMixin, t.QueuelibTestCase):
+class RedisLifoQueueTest(t.LifoTestMixin, RedisQueueTestMixin,
+                         t.PersistentTestMixin, t.QueuelibTestCase):
 
     def queue(self):
         return PickleLifoRedisQueue(self.qpath, self.get_settings())
 
 
-class RedisQueueErrorTest(t.QueuelibTestCase):
+@pytest.mark.redis
+class RedisQueueErrorTest(RedisQueueTestMixin, t.QueuelibTestCase):
+
+    def queue(self):
+        return PickleFifoRedisQueue(self.qpath, self.get_settings())
 
     def test_missing_setting(self):
         """NotConfigured exception is raised if one of the required settings
@@ -265,12 +270,13 @@ class RedisQueueErrorTest(t.QueuelibTestCase):
 
     def test_connection_error_length_0(self):
         """In case of a connection error, the length of the queue is 0."""
-        settings = Settings()
-        settings['SCHEDULER_EXTERNAL_QUEUE_REDIS_URL'] = (
-            'redis://hostname.invalid:6379/0'
-        )
-        q = PickleFifoRedisQueue(self.qpath, settings)
-        assert len(q) == 0
-        with pytest.raises(redis.exceptions.ConnectionError):
-            q.client.ping()
-        assert len(q) == 0
+        q = self.queue()
+        q.push('a')
+        assert len(q) == 1
+
+        with unittest.mock.patch(
+            'redis.client.Redis.llen', side_effect=redis.exceptions.ConnectionError
+        ):
+            assert len(q) == 0
+
+        assert q.pop() == 'a'

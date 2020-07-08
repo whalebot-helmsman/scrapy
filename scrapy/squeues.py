@@ -114,6 +114,8 @@ class _RedisQueue(ABC):
             _RedisQueue.clients[url] = redis.Redis.from_url(url)
         self.client = _RedisQueue.clients[url]
 
+        self.client.ping()
+
         prefix = self._get_required_setting('SCHEDULER_EXTERNAL_QUEUE_REDIS_PREFIX')
         self.queue_name = "{}-{}".format(prefix, path)
 

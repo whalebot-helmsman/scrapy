@@ -1,10 +1,7 @@
 import hashlib
 import logging
-import random
 
-from scrapy.http import Request
 from scrapy.utils.misc import create_instance
-from scrapy.utils.request import request_fingerprint
 
 logger = logging.getLogger(__name__)
 
@@ -65,30 +62,7 @@ class ScrapyPriorityQueue:
         self.init_prios(startprios)
 
     def selfcheck(self):
-        # Find an empty/unused queue.
-        while True:
-            # Use random priority to not interfere with existing queues.
-            priority = random.randrange(2**64)
-            q = self.qfactory(priority)
-            if not q:  # Queue is empty
-                break
-            q.close()
-
-        self.queues[priority] = q
-        self.curprio = priority
-        req1 = Request('http://hostname.invalid', priority=priority)
-        self.push(req1)
-        req2 = self.pop()
-        if request_fingerprint(req1) != request_fingerprint(req2):
-            raise ValueError(
-                "Pushed request %s with priority %d but popped different request %s."
-                % (req1, priority, req2)
-            )
-
-        if q:
-            raise ValueError(
-                "Queue with priority %d should be empty after selfcheck!" % priority
-            )
+        self.qfactory('selfcheck').close()
 
     def init_prios(self, startprios):
         if not startprios:

@@ -1,16 +1,17 @@
 import collections
-import logging
 import shutil
 import tempfile
 import unittest
 
 import pytest
+import redis.exceptions
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
 
 from scrapy.crawler import Crawler
 from scrapy.core.downloader import Downloader
 from scrapy.core.scheduler import Scheduler
+from scrapy.exceptions import NotConfigured
 from scrapy.http import Request
 from scrapy.spiders import Spider
 from scrapy.utils.httpobj import urlparse_cached
@@ -218,27 +219,18 @@ class BaseSchedulerHandlerRedis(SchedulerHandler):
 
     def setUp(self):
         self.jobdir = tempfile.mkdtemp()
-        self.create_scheduler()
 
     def tearDown(self):
-        self.close_scheduler()
         shutil.rmtree(self.jobdir)
         self.jobdir = None
-
-    @pytest.fixture(autouse=True)
-    def inject_fixtures(self, caplog):
-        self._caplog = caplog
 
 
 class BaseSchedulerRedisConnectionErrorTester(BaseSchedulerHandlerRedis):
     settings = {'SCHEDULER_EXTERNAL_QUEUE_REDIS_URL': 'redis://hostname.invalid:6379/0'}
 
     def test_connection_error(self):
-        with self._caplog.at_level(logging.WARNING):
-            assert (
-                'Unable to create priority queue with disk storage'
-                in self._caplog.records[-1].message
-            )
+        with pytest.raises(redis.exceptions.ConnectionError):
+            self.create_scheduler()
 
 
 class TestSchedulerRedisConnectionError(BaseSchedulerRedisConnectionErrorTester,
@@ -255,9 +247,6 @@ class BaseSchedulerRedisConstructorExceptionTester(BaseSchedulerHandlerRedis):
     settings = {'SCHEDULER_EXTERNAL_QUEUE_REDIS_URL': None}
     dqs_state = None
 
-    def setUp(self):
-        self.jobdir = tempfile.mkdtemp()
-
     def test_create_scheduler_with_queue_state(self):
         # The queue is only created in the constructor when there is state on disk.
         # Therefore we have to write disk queue state to disk.
@@ -265,13 +254,8 @@ class BaseSchedulerRedisConstructorExceptionTester(BaseSchedulerHandlerRedis):
         dqdir = s._dqdir(self.jobdir)
         s._write_dqs_state(dqdir, self.dqs_state)
 
-        self.create_scheduler()
-        assert self.scheduler.dqs is None
-
-        with self._caplog.at_level(logging.ERROR):
-            assert "Unable to create priority queue with disk storage" in (
-                self._caplog.records[-1].message
-            )
+        with pytest.raises(NotConfigured):
+            self.create_scheduler()
 
 
 class TestSchedulerRedisConstructorException(
@@ -320,7 +304,6 @@ class TestMigration(unittest.TestCase):
 
         next_scheduler_handler.create_scheduler()
 
-    @pytest.mark.xfail
     def test_migration(self):
         with self.assertRaises(ValueError):
             self._migration(self.tmpdir)
