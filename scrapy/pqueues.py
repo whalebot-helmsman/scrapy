@@ -167,8 +167,7 @@ class DownloaderAwarePriorityQueue:
             self.pqueues[slot] = self.pqfactory(slot, startprios)
 
     def selfcheck(self):
-        queue = self.pqfactory('hostname.invalid')
-        queue.close()
+        self.pqfactory('hostname.invalid').close()
 
     def pqfactory(self, slot, startprios=()):
         return ScrapyPriorityQueue(self.crawler,
