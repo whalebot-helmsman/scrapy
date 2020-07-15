@@ -1,3 +1,4 @@
+import logging
 import os
 import pickle
 import pytest
@@ -23,7 +24,6 @@ from scrapy.selector import Selector
 from scrapy.settings import Settings
 from tests.mockserver import RedisServer
 
-import logging
 logger = logging.getLogger(__name__)
 
 

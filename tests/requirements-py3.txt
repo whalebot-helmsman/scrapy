@@ -8,9 +8,9 @@ pytest != 5.4, != 5.4.1
 pytest-cov
 pytest-twisted >= 1.11
 pytest-xdist
+redis
 sybil
 testfixtures
-redis
 
 # optional for shell wrapper tests
 bpython
