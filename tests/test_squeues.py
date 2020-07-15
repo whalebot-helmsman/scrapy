@@ -231,6 +231,8 @@ class RedisQueueTestMixin:
 
         for x in values:
             q.pop()
+
+        assert len(q) == 0
         q.close()
         assert not os.path.exists(self.qpath)
 
