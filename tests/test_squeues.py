@@ -16,7 +16,7 @@ from scrapy.squeues import (
     PickleFifoRedisQueueNonRequest as PickleFifoRedisQueue,
     PickleLifoRedisQueueNonRequest as PickleLifoRedisQueue,
 )
-from scrapy.exceptions import NotConfigured
+from scrapy.exceptions import NotConfigured, TransientError
 from scrapy.http import Request
 from scrapy.item import Item, Field
 from scrapy.loader import ItemLoader
@@ -279,6 +279,61 @@ class RedisQueueErrorTest(RedisQueueTestMixin, t.QueuelibTestCase):
         with unittest.mock.patch(
             'redis.client.Redis.llen', side_effect=redis.exceptions.ConnectionError
         ):
-            assert len(q) == 0
+            assert len(q) == 1
 
+        assert q.pop() == 'a'
+        assert len(q) == 0
+
+    def test_connection_error_push(self):
+        """In case of a connection error, push() raises a TransientError."""
+        q = self.queue()
+
+        with unittest.mock.patch(
+            'redis.client.Redis.lpush', side_effect=redis.exceptions.ConnectionError
+        ):
+            with pytest.raises(TransientError):
+                q.push('a')
+
+        assert len(q) == 0
+
+    def test_connection_error_pop(self):
+        """In case of a connection error, pop() returns None."""
+        q = self.queue()
+        q.push('a')
+
+        with unittest.mock.patch(
+            'redis.client.Redis.rpop', side_effect=redis.exceptions.ConnectionError
+        ):
+            assert q.pop() is None
+
+        assert len(q) == 1
+        assert q.pop() == 'a'
+
+    class _NotHandledException(Exception):
+        pass
+
+    def test_not_handled_exception_push(self):
+        """In case of an unhandled exception, push() raises the exception."""
+        q = self.queue()
+
+        with unittest.mock.patch(
+            'redis.client.Redis.lpush', side_effect=self._NotHandledException,
+        ):
+            with pytest.raises(self._NotHandledException):
+                q.push('a')
+
+        assert len(q) == 0
+
+    def test_not_handled_exception_pop(self):
+        """In case of an unhandled exception, pop() raises the exception."""
+        q = self.queue()
+        q.push('a')
+
+        with unittest.mock.patch(
+            'redis.client.Redis.rpop', side_effect=self._NotHandledException,
+        ):
+            with pytest.raises(self._NotHandledException):
+                q.pop()
+
+        assert len(q) == 1
         assert q.pop() == 'a'

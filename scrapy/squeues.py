@@ -10,7 +10,7 @@ from abc import ABC, abstractmethod
 
 from queuelib import queue
 
-from scrapy.exceptions import NotConfigured
+from scrapy.exceptions import NotConfigured, TransientError
 from scrapy.utils.reqser import request_to_dict, request_from_dict
 
 
@@ -118,10 +118,10 @@ class _RedisQueue(ABC):
         self.client = _RedisQueue.clients[url]
         self.client.ping()
 
-        size = len(self)
-        if size > 0:
+        self.size = len(self)
+        if self.size > 0:
             logger.debug("Using redis at '%s' with existing queue '%s' (size: %d)",
-                         url, self.queue_name, size)
+                         url, self.queue_name, self.size)
         else:
             logger.debug("Using redis at '%s' with new queue '%s'", url, self.queue_name)
 
@@ -138,10 +138,25 @@ class _RedisQueue(ABC):
         return value
 
     def push(self, string):
-        self.client.lpush(self.queue_name, string)
+        import redis.exceptions
+        try:
+            self.client.lpush(self.queue_name, string)
+            self.size += 1
+        except redis.exceptions.ConnectionError as ex:
+            raise TransientError("Failed to push to queue", ex)
+
+    def pop(self):
+        import redis.exceptions
+        try:
+            string = self._pop()
+            self.size -= 1
+            return string
+        except redis.exceptions.ConnectionError as ex:
+            logger.error("Failed to pop from queue: %s", str(ex), exc_info=True)
+            return None
 
     @abstractmethod
-    def pop(self):
+    def _pop(self):
         pass
 
     def close(self):
@@ -149,24 +164,24 @@ class _RedisQueue(ABC):
 
     def __len__(self):
         import redis.exceptions
-        # In case there is a connection error, assume the queue is empty.
+        # In case there is a connection error, use the cached queue size.
         # This allows a clean shutdown of Scrapy if there is a connection
         # problem.
         try:
             return self.client.llen(self.queue_name)
         except redis.exceptions.ConnectionError:
-            return 0
+            return self.size
 
 
 class _FifoRedisQueue(_RedisQueue):
 
-    def pop(self):
+    def _pop(self):
         return self.client.rpop(self.queue_name)
 
 
 class _LifoRedisQueue(_RedisQueue):
 
-    def pop(self):
+    def _pop(self):
         return self.client.lpop(self.queue_name)
 
 
