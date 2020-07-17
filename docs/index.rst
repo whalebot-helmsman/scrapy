@@ -254,7 +254,7 @@ Extending Scrapy
     Quickly export your scraped items to a file (XML, CSV, etc).
 
 :doc:`topics/queues`
-    Store requests in a queue to pause and resume crawls.
+    Store requests in an external queue.
 
 
 All the rest

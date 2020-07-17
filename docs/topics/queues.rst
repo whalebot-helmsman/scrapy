@@ -5,45 +5,63 @@ Queues
 ======
 
 Scrapy uses queues to schedule requests. By default, a memory-based queue is
-used but if :ref:`crawls should be paused and resumed <topics-jobs>`, using an
-external queue (disk queue) is necessary. The setting
-:setting:`SCHEDULER_DISK_QUEUE` determines the type of disk queue that will be
-used by the scheduler.
+used but if :ref:`crawls should be paused and resumed <topics-jobs>` or more
+requests than fit in memory are scheduled, using an external queue (disk
+queue) is necessary. The setting :setting:`SCHEDULER_DISK_QUEUE` determines
+the type of disk queue that will be used by the scheduler.
 
-If you want to use your own disk queue, it has to conform to the following
-interface:
+If you want to use your own disk queue implementation, it has to conform to
+the following interface:
 
 .. class:: MyExternalQueue
 
-   .. method:: __init__(self, path)
+   .. classmethod:: from_crawler(cls, crawler, key)
 
-      The constructor receives the ``path`` argument which identifies the
-      queue. The constructor can also access ``self.settings`` which contains
-      the currently active settings.
+      Creates a new queue object based on ``crawler`` and ``key``.
 
-      The constructor is expected to verify the arguments and the relevant
-      settings and raise a ``ValueError`` in case of an error. This may
-      involve opening a connection to a remote service.
+      This factory method receives the ``crawler`` argument to access the
+      crawler's settings and the ``key`` argument which identifies the queue.
+      The class method creates and returns a queue object based on the
+      arguments.
 
-      :raises ValueError: If ``path`` or a queue-specific setting is invalid.
+      The method is expected to verify the arguments and the relevant settings
+      and raise an exception in case of an error. This may involve opening
+      a connection to a remote service.
 
-   .. method:: push(self, string)
+      .. note::
+         In case an exception is raised, the crawling process is halted.
 
-      Pushes the string ``string`` on the queue and increases the cached
-      number of elements.
+      :raises Exception: If ``key`` or a queue-specific setting is invalid.
+          Exceptions are not handled by the caller and the crawling process is
+          halted.
+
+   .. method:: push(self, request)
+
+      Pushes a request to the queue.
+
+      The helper function :meth:`~scrapy.utils.reqser.request_to_dict` can be
+      used to convert the request to a dict which can then be easily
+      serialized with, for example, :meth:`pickle.dumps`.
 
       If the push fails because of a temporary problem (e.g. the connection
-      was dropped), a ``TransientError`` should be raised. This causes the
-      caller to fall back to a memory queue.
+      was dropped), a ``TransientError`` should be raised. If the request
+      could not be serialized, a ``ValueError`` should be raised.
+      The scheduler will fall back to the memory queue (for this particular
+      request) in both cases. In case of any other exception the crawling
+      process is halted.
 
       :raises TransientError: If pushing to the queue failed due to a
           temporary error.
+      :raises ValueError: If pushing to the queue failed because the request
+          could not be serialized.
 
    .. method:: pop(self)
 
-      Pops a string from the queue and decreases the cached number of
-      elements. In case of a temporary problem, ``None`` is returned (and the
-      number of elements is not decreased).
+      Pops a request from the queue. In case of a temporary problem, ``None``
+      is returned.
+
+      The helper function :meth:`~scrapy.utils.reqser.request_from_dict` can
+      be used to convert the deserialized dict back to a request.
 
       It is up to the queue implementation to decide if the most recently
       pushed value (LIFO) or the least recently pushed value (FIFO) is
@@ -55,14 +73,16 @@ interface:
 
    .. method:: close(self)
 
-      Releases internal handlers (e.g. closes file or socket).
+      Releases internal resources (e.g. closes a file or socket).
 
    .. method:: __len__(self)
 
-      Returns the number of elements in the queue. If the number of elements
-      cannot be determined (e.g. because of a connection problem), the cached
-      number of elements is returned.
+      Returns the number of elements in the queue.
+
+      If the number of elements cannot be determined (e.g. because of a
+      connection problem), the method must not return 0 because this would
+      cause the queue to be closed.
 
       .. note::
          In case of a temporary error, the method must not raise an exception
-         but return the cached number of elements instead.
+         but return the number of elements instead.
