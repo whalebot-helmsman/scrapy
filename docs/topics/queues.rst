@@ -32,8 +32,6 @@ the following interface:
          In case an exception is raised, the crawling process is halted.
 
       :raises Exception: If ``key`` or a queue-specific setting is invalid.
-          Exceptions are not handled by the caller and the crawling process is
-          halted.
 
    .. method:: push(self, request)
 
@@ -43,15 +41,12 @@ the following interface:
       used to convert the request to a dict which can then be easily
       serialized with, for example, :meth:`pickle.dumps`.
 
-      If the push fails because of a temporary problem (e.g. the connection
-      was dropped), a ``TransientError`` should be raised. If the request
-      could not be serialized, a ``ValueError`` should be raised.
       The scheduler will fall back to the memory queue (for this particular
-      request) in both cases. In case of any other exception the crawling
-      process is halted.
+      request) in case of a :exc:`TransientError` or a :exc:`ValueError`. In
+      case of any other exception the crawling process is halted.
 
       :raises TransientError: If pushing to the queue failed due to a
-          temporary error.
+          temporary error (e.g. the connection was dropped).
       :raises ValueError: If pushing to the queue failed because the request
           could not be serialized.
 
