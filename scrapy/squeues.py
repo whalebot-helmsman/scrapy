@@ -10,7 +10,7 @@ from abc import ABC, abstractmethod
 
 from queuelib import queue
 
-from scrapy.exceptions import NotConfigured, TransientError
+from scrapy.exceptions import NotConfigured, SerializationError, TransientError
 from scrapy.utils.reqser import request_to_dict, request_from_dict
 
 
@@ -95,7 +95,7 @@ def _pickle_serialize(obj):
     # Both pickle.PicklingError and AttributeError can be raised by pickle.dump(s)
     # TypeError is raised from parsel.Selector
     except (pickle.PicklingError, AttributeError, TypeError) as e:
-        raise ValueError(str(e)) from e
+        raise SerializationError(str(e)) from e
 
 
 class _RedisQueue(ABC):
