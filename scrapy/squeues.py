@@ -138,20 +138,20 @@ class _RedisQueue(ABC):
         return value
 
     def push(self, string):
-        import redis.exceptions
+        from redis.exceptions import ConnectionError, TimeoutError
         try:
             self.client.lpush(self.queue_name, string)
             self.size += 1
-        except redis.exceptions.ConnectionError as ex:
+        except (ConnectionError, TimeoutError) as ex:
             raise TransientError("Failed to push to queue", ex)
 
     def pop(self):
-        import redis.exceptions
+        from redis.exceptions import ConnectionError, TimeoutError
         try:
             string = self._pop()
             self.size -= 1
             return string
-        except redis.exceptions.ConnectionError as ex:
+        except (ConnectionError, TimeoutError) as ex:
             logger.error("Failed to pop from queue: %s", str(ex), exc_info=True)
             return None
 
@@ -163,13 +163,13 @@ class _RedisQueue(ABC):
         self.client.close()
 
     def __len__(self):
-        import redis.exceptions
+        from redis.exceptions import ConnectionError, TimeoutError
         # In case there is a connection error, use the cached queue size.
         # This allows a clean shutdown of Scrapy if there is a connection
         # problem.
         try:
             return self.client.llen(self.queue_name)
-        except redis.exceptions.ConnectionError:
+        except (ConnectionError, TimeoutError):
             return self.size
 
 
