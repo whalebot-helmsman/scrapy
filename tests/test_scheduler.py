@@ -1,5 +1,6 @@
 import collections
 import logging
+from pathlib import Path
 import pickle
 import shutil
 import tempfile
@@ -463,7 +464,7 @@ class CrawlerAccessTester(SchedulerHandler, unittest.TestCase):
         self.caplog = caplog
 
     def setUp(self):
-        self.jobdir = tempfile.mkdtemp() + '/queue'
+        self.jobdir = str(Path(tempfile.mkdtemp()) / 'queue')
         self.create_scheduler()
 
     def tearDown(self):
