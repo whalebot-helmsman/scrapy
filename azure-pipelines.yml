@@ -18,5 +18,5 @@ steps:
   displayName: 'Use Python $(python.version)'
 - script: |
     pip install -U tox twine wheel codecov
-    tox
+    tox -- tests/test_scheduler.py
   displayName: 'Run test suite'
