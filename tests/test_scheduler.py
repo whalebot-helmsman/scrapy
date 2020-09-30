@@ -481,7 +481,7 @@ class CrawlerAccessTester(SchedulerHandler, unittest.TestCase):
 
 def test_fifo_closing():
     jobdir = tempfile.mkdtemp()
-    queue = PickleFifoDiskQueue(jobdir)
-    queue.close()
+    queue_1 = queue.FifoDiskQueue(jobdir + '/key')
+    queue_1.close()
     shutil.rmtree(jobdir)
 
