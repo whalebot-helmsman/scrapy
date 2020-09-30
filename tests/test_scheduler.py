@@ -477,3 +477,11 @@ class CrawlerAccessTester(SchedulerHandler, unittest.TestCase):
         self.scheduler.enqueue_request(Request('http://example.com/'))
         self.scheduler.enqueue_request(Request('http://example.com/'))
         assert _find_in_logs(self.caplog, 'hello world') == 3
+
+
+def test_fifo_closing():
+    jobdir = tempfile.mkdtemp()
+    queue = PickleFifoDiskQueue(jobdir)
+    queue.close()
+    shutil.rmtree(jobdir)
+
