@@ -442,7 +442,6 @@ class FifoWithCrawlerAccess(queue.FifoDiskQueue):
 
     def push(self, request):
         self.logger.warning(self.hello_message)
-        super().push(request)
 
 
 TestedQueue = _scrapy_serialization_queue(
