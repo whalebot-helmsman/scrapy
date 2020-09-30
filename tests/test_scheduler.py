@@ -360,7 +360,16 @@ class TestIncompatibility(unittest.TestCase):
             self._incompatible()
 
 
-class ConstantErrorQueue(PickleFifoDiskQueue):
+class ConstantErrorQueue:
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def __len__(self):
+        return 0
+
+    def close(self):
+        return None
+
     def push(self, request):
         if getattr(self, 'counter', None) is None:
             self.counter = 0
