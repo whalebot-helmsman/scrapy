@@ -463,7 +463,7 @@ class CrawlerAccessTester(SchedulerHandler, unittest.TestCase):
         self.caplog = caplog
 
     def setUp(self):
-        self.jobdir = tempfile.mkdtemp()
+        self.jobdir = tempfile.mkdtemp() + '/queue'
         self.create_scheduler()
 
     def tearDown(self):
