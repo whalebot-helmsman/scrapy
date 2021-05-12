@@ -17,12 +17,12 @@ def _with_mkdir(queue_class):
 
     class DirectoriesCreatedForKey(queue_class):
 
-        def __init__(self, crawler, key, *args, **kwargs):
+        def __init__(self, crawler, key):
             path = key
             dirname = os.path.dirname(path)
             if not os.path.exists(dirname):
                 os.makedirs(dirname, exist_ok=True)
-            super().__init__(crawler, path, *args, **kwargs)
+            super().__init__(crawler, path)
 
     return DirectoriesCreatedForKey
 
@@ -55,13 +55,13 @@ def _scrapy_serialization_queue(queue_class):
 
     class ScrapyRequestQueue(queue_class):
 
-        def __init__(self, crawler, key, *args, **kwargs):
+        def __init__(self, crawler, key):
             self.spider = crawler.spider
-            super().__init__(crawler, key, *args, **kwargs)
+            super().__init__(crawler, key)
 
         @classmethod
-        def from_crawler(cls, crawler, key, *args, **kwargs):
-            return cls(crawler, key, *args, **kwargs)
+        def from_crawler(cls, crawler, key):
+            return cls(crawler, key)
 
         def push(self, request):
             request = request.to_dict(spider=self.spider)
@@ -86,7 +86,7 @@ def _scrapy_non_serialization_queue(queue_class):
 
     class ScrapyRequestQueue(queue_class):
         @classmethod
-        def from_crawler(cls, crawler, *args, **kwargs):
+        def from_crawler(cls, crawler, *args):
             return cls()
 
         def peek(self):
@@ -111,12 +111,12 @@ def _pickle_serialize(obj):
 def _file_queue(queue_class):
     class FileQueue(queue_class):
 
-        def __init__(self, _, key, *args, **kwargs):
+        def __init__(self, _, key):
             super().__init__(key)
 
         @classmethod
-        def from_crawler(cls, crawler, key, *args, **kwargs):
-            return cls(crawler, key, *args, **kwargs)
+        def from_crawler(cls, crawler, key):
+            return cls(crawler, key)
 
     return FileQueue
 
